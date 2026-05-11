@@ -1,49 +1,132 @@
-# BTL CSDLPT - Dang Ky Hoc Phan
+# BTL CSDLPT - Đăng Ký Học Phần
 
-## Mo hinh PostgreSQL phan tan
+Project mô phỏng hệ thống đăng ký học phần nhiều cơ sở, dùng Python, PostgreSQL và Docker Compose.
 
-Project dung 5 container PostgreSQL rieng, moi container la mot server/site:
+## 1. Mô Hình PostgreSQL Phân Tán
+
+Project dùng 5 container PostgreSQL riêng, mỗi container là một server/site:
 
 | Site | Container | Database | Port |
 | --- | --- | --- | --- |
-| Hoa Lac | `postgres_hoalac` | `site_hoalac` | `5440` |
-| Ngoc Truc | `postgres_ngoctruc` | `site_ngoctruc` | `5441` |
-| Ha Dong | `postgres_hadong` | `site_hadong` | `5442` |
-| Cau Giay | `postgres_caugiay` | `site_caugiay` | `5443` |
-| HCM | `postgres_hcm` | `site_hcm` | `5444` |
+| Hòa Lạc | `postgres_hoalac` | `site_hoalac` | `5440` |
+| Ngọc Trục | `postgres_ngoctruc` | `site_ngoctruc` | `5441` |
+| Hà Đông | `postgres_hadong` | `site_hadong` | `5442` |
+| Cầu Giấy | `postgres_caugiay` | `site_caugiay` | `5443` |
+| TP.HCM | `postgres_hcm` | `site_hcm` | `5444` |
+
+Thông tin đăng nhập:
+
+```text
+Username: postgres
+Password: toantk178@
+```
+
+## 2. Chạy Docker
+
+Chạy trong thư mục gốc project `BTL-CSDLPT`:
+
+```powershell
+docker compose up -d
+```
+
+Kiểm tra 5 container:
+
+```powershell
+docker compose ps
+```
+
+Tắt container nhưng giữ dữ liệu:
+
+```powershell
+docker compose down
+```
+
+Tắt container và xóa toàn bộ volume dữ liệu:
+
+```powershell
+docker compose down -v
+```
+
+Khi đổi schema database, ví dụ đổi quan hệ `LopHocPhan 1 - n LichHoc n - 1 PhongHoc`, nên reset dữ liệu cũ rồi tạo lại từ đầu:
+
+```powershell
+docker compose down -v
+docker compose up -d
+.\run_sql.bat
+python seed_data.py
+python test_queries.py
+```
+
+## 3. Tạo Bảng Cho 5 Server
+
+Sau khi Docker đã chạy, chạy file batch:
+
+```powershell
+.\run_sql.bat
+```
+
+File này sẽ chạy `sql/01_create_tables.sql` trên cả 5 server PostgreSQL.
+
+## 4. Cài Thư Viện Python
+
+```powershell
+pip install -r requirements.txt
+```
+
+## 5. Bơm Dữ Liệu Mẫu
+
+```powershell
+python seed_data.py
+```
+
+Script này kết nối 5 database và thêm dữ liệu mẫu phục vụ demo.
+
+## 6. Test Truy Vấn Phân Tán
+
+Chạy:
+
+```powershell
+python test_queries.py
+```
+
+File `test_queries.py` sẽ gọi các hàm trong `db/distributed_queries.py`:
+
+- `thong_ke_dang_ky_theo_co_so()`
+- `hoc_phan_dang_ky_nhieu_nhat()`
+- `sinh_vien_dang_ky_cheo_co_so()`
+- `ty_le_lap_day_lop_hoc_phan()`
+- `thong_ke_so_lop_theo_co_so()`
+- `thong_ke_sinh_vien_theo_co_so()`
+- `danh_sach_lop_hoc_phan_toan_truong()`
+
+## 7. Chạy Ứng Dụng
+
+Kiểm tra cấu hình Python hiện tại:
+
+```powershell
+python app.py
+```
+
+Nếu `app.py` đã được phát triển thành giao diện Streamlit, chạy:
+
+```powershell
+streamlit run app.py
+```
+
+## 8. Kết Nối PgAdmin
+
+Trong pgAdmin, tự register 5 server connection sau:
+
+| Name | Host | Port | Maintenance database |
+| --- | --- | --- | --- |
+| `site_hoalac` | `localhost` | `5440` | `site_hoalac` |
+| `site_ngoctruc` | `localhost` | `5441` | `site_ngoctruc` |
+| `site_hadong` | `localhost` | `5442` | `site_hadong` |
+| `site_caugiay` | `localhost` | `5443` | `site_caugiay` |
+| `site_hcm` | `localhost` | `5444` | `site_hcm` |
 
 Username: `postgres`
 
 Password: `toantk178@`
 
-## Chay Docker
-
-```powershell
-docker compose up -d
-docker ps
-```
-
-## Hướng dẫn chạy và setup cho nhóm
-Để setup toàn bộ 5 server và đẩy dữ liệu mẫu vào, chỉ cần làm theo 4 bước sau:
-
-**Bước 1: Bật các server PostgreSQL bằng Docker**
-```powershell
-docker compose up -d
-```
-
-**Bước 2: Tạo cấu trúc bảng cho 5 Database**
-Chạy file `.bat` sau (trên Windows) để tự động đẩy file `sql/01_create_tables.sql` vào cả 5 server:
-```powershell
-.\run_sql.bat
-```
-
-**Bước 3: Cài đặt thư viện Python**
-```powershell
-pip install -r requirements.txt
-```
-
-**Bước 4: Bơm dữ liệu mẫu (Mock Data)**
-Chạy script Python dưới đây. Script sẽ tự động kết nối 5 database, insert dữ liệu chung (Khoa, Học phần) và dữ liệu cục bộ (Sinh viên, Phòng học, Lớp HP) đúng theo nguyên tắc phân mảnh:
-```powershell
-python seed_data.py
-```
+PgAdmin không tự hiện container Docker, nên phải register thủ công các server này.

@@ -96,15 +96,12 @@ CREATE TABLE LopHocPhan (
     shift int,
     ID_subject varchar(255) NOT NULL,
     ID_teacher varchar(255) NOT NULL,
-    ID_room varchar(255),
     ID_headquarter varchar(255) NOT NULL,
     CONSTRAINT PK_LopHocPhan PRIMARY KEY (ID),
     CONSTRAINT FK_Lop_HocPhan 
         FOREIGN KEY (ID_subject) REFERENCES HocPhan(ID),
     CONSTRAINT FK_Lop_GiangVien 
         FOREIGN KEY (ID_teacher) REFERENCES GiangVien(ID),
-    CONSTRAINT FK_Lop_PhongHoc 
-        FOREIGN KEY (ID_room) REFERENCES PhongHoc(ID),
     CONSTRAINT FK_Lop_CoSo 
         FOREIGN KEY (ID_headquarter) REFERENCES CoSo(ID),
     CONSTRAINT CK_LopHocPhan_SiSo 
@@ -118,12 +115,16 @@ CREATE TABLE LichHoc (
     day_of_week int NOT NULL,
     start_period int NOT NULL,
     end_period int NOT NULL,
-    ID_room varchar(255),
+    ID_room varchar(255) NOT NULL,
     CONSTRAINT PK_LichHoc PRIMARY KEY (ID),
     CONSTRAINT FK_LichHoc_LopHocPhan 
         FOREIGN KEY (ID_class) REFERENCES LopHocPhan(ID),
     CONSTRAINT FK_LichHoc_PhongHoc 
-        FOREIGN KEY (ID_room) REFERENCES PhongHoc(ID)
+        FOREIGN KEY (ID_room) REFERENCES PhongHoc(ID),
+    CONSTRAINT CK_LichHoc_Thu
+        CHECK (day_of_week BETWEEN 2 AND 8),
+    CONSTRAINT CK_LichHoc_Tiet
+        CHECK (start_period > 0 AND end_period >= start_period)
 );
 
 -- 9. BẢNG ĐĂNG KÝ
@@ -137,5 +138,7 @@ CREATE TABLE DangKy (
     CONSTRAINT FK_DangKy_CoSoSinhVien 
         FOREIGN KEY (ID_student_headquarter) REFERENCES CoSo(ID),
     CONSTRAINT FK_DangKy_LopHocPhan 
-        FOREIGN KEY (ID_class) REFERENCES LopHocPhan(ID)
+        FOREIGN KEY (ID_class) REFERENCES LopHocPhan(ID),
+    CONSTRAINT CK_DangKy_Status
+        CHECK (status IN ('DA_DANG_KY', 'DA_HUY'))
 );
