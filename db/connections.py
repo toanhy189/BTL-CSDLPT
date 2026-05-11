@@ -42,6 +42,13 @@ DB_CONFIGS = {
 }
 
 SITE_CODES = ["HL", "NT", "HD", "CG", "HCM"]
+SITE_NAMES = {
+    "HL": "Hòa Lạc",
+    "NT": "Ngọc Trục",
+    "HD": "Hà Đông",
+    "CG": "Cầu Giấy",
+    "HCM": "TP.HCM",
+}
 
 
 def get_connection(site_code):
@@ -53,3 +60,13 @@ def get_connection(site_code):
 def get_all_connections():
     """Open connections to all configured distributed sites."""
     return {site_code: get_connection(site_code) for site_code in SITE_CODES}
+
+
+def check_site_connection(site_code):
+    """Return connection status for one site without raising to the UI."""
+    try:
+        conn = get_connection(site_code)
+        conn.close()
+        return True, "Kết nối thành công"
+    except Exception as exc:
+        return False, str(exc)

@@ -1,10 +1,20 @@
-# BTL CSDLPT - Đăng Ký Học Phần
+# Hệ Thống Đăng Ký Học Phần Nhiều Cơ Sở
 
-Project mô phỏng hệ thống đăng ký học phần nhiều cơ sở, dùng Python, PostgreSQL và Docker Compose.
+Đồ án CSDL phân tán mô phỏng hệ thống đăng ký học phần trên 5 cơ sở đào tạo.
 
-## 1. Mô Hình PostgreSQL Phân Tán
+## Công Nghệ
 
-Project dùng 5 container PostgreSQL riêng, mỗi container là một server/site:
+- Python
+- Streamlit
+- PostgreSQL
+- Docker Compose
+- psycopg2
+- pandas
+- pgAdmin
+
+## Kiến Trúc
+
+Hệ thống dùng 5 PostgreSQL server Docker, mỗi server là một site:
 
 | Site | Container | Database | Port |
 | --- | --- | --- | --- |
@@ -14,108 +24,74 @@ Project dùng 5 container PostgreSQL riêng, mỗi container là một server/si
 | Cầu Giấy | `postgres_caugiay` | `site_caugiay` | `5443` |
 | TP.HCM | `postgres_hcm` | `site_hcm` | `5444` |
 
-Thông tin đăng nhập:
+Luồng xử lý:
 
 ```text
-Username: postgres
+Streamlit UI -> Python services -> psycopg2 -> 5 PostgreSQL server
+```
+
+Truy vấn phân tán đọc dữ liệu từ 5 site rồi tổng hợp bằng pandas.
+
+## Thông Tin Database
+
+```text
+Host: localhost
+User: postgres
 Password: toantk178@
+Ports: 5440, 5441, 5442, 5443, 5444
 ```
 
-## 2. Chạy Docker
+Mật khẩu trên đang khớp với `docker-compose.yml` và `db/connections.py` hiện tại.
 
-Chạy trong thư mục gốc project `BTL-CSDLPT`:
+## Cài Thư Viện
 
-```powershell
-docker compose up -d
-```
-
-Kiểm tra 5 container:
-
-```powershell
-docker compose ps
-```
-
-Tắt container nhưng giữ dữ liệu:
-
-```powershell
-docker compose down
-```
-
-Tắt container và xóa toàn bộ volume dữ liệu:
-
-```powershell
-docker compose down -v
-```
-
-Khi đổi schema database, ví dụ đổi quan hệ `LopHocPhan 1 - n LichHoc n - 1 PhongHoc`, nên reset dữ liệu cũ rồi tạo lại từ đầu:
-
-```powershell
-docker compose down -v
-docker compose up -d
-.\run_sql.bat
-python seed_data.py
-python test_queries.py
-```
-
-## 3. Tạo Bảng Cho 5 Server
-
-Sau khi Docker đã chạy, chạy file batch:
-
-```powershell
-.\run_sql.bat
-```
-
-File này sẽ chạy `sql/01_create_tables.sql` trên cả 5 server PostgreSQL.
-
-## 4. Cài Thư Viện Python
+Chạy trong thư mục `BTL-CSDLPT`:
 
 ```powershell
 pip install -r requirements.txt
 ```
 
-## 5. Bơm Dữ Liệu Mẫu
+## Chạy Database
 
 ```powershell
+docker compose up -d
+```
+
+Kiểm tra container:
+
+```powershell
+docker ps
+docker compose ps
+```
+
+## Tạo Bảng Và Import Dữ Liệu
+
+Cách nhanh cho project hiện tại:
+
+```powershell
+.\run_sql.bat
 python seed_data.py
 ```
 
-Script này kết nối 5 database và thêm dữ liệu mẫu phục vụ demo.
+`run_sql.bat` chạy `sql/01_create_tables.sql` trên cả 5 server. `seed_data.py` sinh dữ liệu mẫu cho cơ sở, khoa, học phần, sinh viên, giảng viên, phòng học, lớp học phần và lịch học.
 
-## 6. Test Truy Vấn Phân Tán
+Nếu muốn chạy SQL thủ công trong pgAdmin, mỗi server chạy:
 
-Chạy:
+1. `sql/01_create_tables.sql`
+2. `sql/02_insert_common_data.sql`
+3. File site riêng:
 
-```powershell
-python test_queries.py
-```
+| Site | File SQL |
+| --- | --- |
+| HL | `sql/03_insert_site_hoalac.sql` |
+| NT | `sql/04_insert_site_ngoctruc.sql` |
+| HD | `sql/05_insert_site_hadong.sql` |
+| CG | `sql/06_insert_site_caugiay.sql` |
+| HCM | `sql/07_insert_site_hcm.sql` |
 
-File `test_queries.py` sẽ gọi các hàm trong `db/distributed_queries.py`:
+## Kết Nối pgAdmin
 
-- `thong_ke_dang_ky_theo_co_so()`
-- `hoc_phan_dang_ky_nhieu_nhat()`
-- `sinh_vien_dang_ky_cheo_co_so()`
-- `ty_le_lap_day_lop_hoc_phan()`
-- `thong_ke_so_lop_theo_co_so()`
-- `thong_ke_sinh_vien_theo_co_so()`
-- `danh_sach_lop_hoc_phan_toan_truong()`
-
-## 7. Chạy Ứng Dụng
-
-Kiểm tra cấu hình Python hiện tại:
-
-```powershell
-python app.py
-```
-
-Nếu `app.py` đã được phát triển thành giao diện Streamlit, chạy:
-
-```powershell
-streamlit run app.py
-```
-
-## 8. Kết Nối PgAdmin
-
-Trong pgAdmin, tự register 5 server connection sau:
+Trong pgAdmin, tự register 5 server connection:
 
 | Name | Host | Port | Maintenance database |
 | --- | --- | --- | --- |
@@ -129,4 +105,91 @@ Username: `postgres`
 
 Password: `toantk178@`
 
-PgAdmin không tự hiện container Docker, nên phải register thủ công các server này.
+pgAdmin không tự hiện container Docker, nên phải register thủ công.
+
+## Chạy Web
+
+```powershell
+streamlit run app.py
+```
+
+Mở trình duyệt tại:
+
+```text
+http://localhost:8501
+```
+
+## Test Truy Vấn Phân Tán
+
+```powershell
+python test_queries.py
+```
+
+## Chức Năng Chính
+
+- Tổng quan hệ thống và trạng thái kết nối 5 site
+- Quản lý cơ sở đào tạo
+- Quản lý sinh viên
+- Quản lý giảng viên
+- Quản lý học phần
+- Quản lý lớp học phần
+- Quản lý phòng học và lịch học
+- Đăng ký học phần
+- Hủy đăng ký học phần
+- Tra cứu kết quả đăng ký
+- Truy vấn phân tán / thống kê
+- Mô phỏng đăng ký đồng thời
+- Nhật ký thao tác
+
+## Truy Vấn Phân Tán
+
+Các truy vấn hiện có:
+
+- Thống kê số lượt đăng ký học phần theo cơ sở
+- Học phần có nhiều sinh viên đăng ký nhất toàn trường
+- Danh sách sinh viên đăng ký chéo cơ sở
+- Tỷ lệ lấp đầy lớp học phần
+- Thống kê số lớp học phần mở theo cơ sở
+- Thống kê số sinh viên theo cơ sở
+- Danh sách lớp học phần toàn trường
+
+## Xử Lý Đồng Thời
+
+Đăng ký học phần dùng transaction:
+
+- Kiểm tra sinh viên tại site gốc của sinh viên
+- Ghi đăng ký tại site mở lớp
+- Khóa dòng lớp học phần bằng `SELECT ... FOR UPDATE`
+- Kiểm tra `number_of_student < max_student`
+- Insert/khôi phục đăng ký
+- Tăng sĩ số lớp
+- Commit hoặc rollback
+
+Mô phỏng đồng thời dùng `threading`, nhiều sinh viên cùng đăng ký một lớp để chứng minh không vượt sĩ số.
+
+## Dừng Hệ Thống
+
+Tắt container nhưng giữ dữ liệu:
+
+```powershell
+docker compose down
+```
+
+Reset sạch database:
+
+```powershell
+docker compose down -v
+docker compose up -d
+.\run_sql.bat
+python seed_data.py
+```
+
+## Ghi Chú Schema
+
+Quan hệ phòng học và lớp học phần:
+
+```text
+LopHocPhan 1 - n LichHoc n - 1 PhongHoc
+```
+
+Vì vậy `lophocphan` không lưu `id_room`; phòng học được gắn qua bảng `lichhoc`.
