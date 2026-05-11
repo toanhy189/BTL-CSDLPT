@@ -23,20 +23,27 @@ docker compose up -d
 docker ps
 ```
 
-## Thu tu chay SQL
+## Hướng dẫn chạy và setup cho nhóm
+Để setup toàn bộ 5 server và đẩy dữ liệu mẫu vào, chỉ cần làm theo 4 bước sau:
 
-Moi server/site deu chay:
+**Bước 1: Bật các server PostgreSQL bằng Docker**
+```powershell
+docker compose up -d
+```
 
-1. `sql/01_create_tables.sql`
-2. `sql/02_insert_common_data.sql`
-3. File insert rieng cua site do:
+**Bước 2: Tạo cấu trúc bảng cho 5 Database**
+Chạy file `.bat` sau (trên Windows) để tự động đẩy file `sql/01_create_tables.sql` vào cả 5 server:
+```powershell
+.\run_sql.bat
+```
 
-| Site | File SQL rieng |
-| --- | --- |
-| Hoa Lac | `sql/03_insert_site_hoalac.sql` |
-| Ngoc Truc | `sql/04_insert_site_ngoctruc.sql` |
-| Ha Dong | `sql/05_insert_site_hadong.sql` |
-| Cau Giay | `sql/06_insert_site_caugiay.sql` |
-| HCM | `sql/07_insert_site_hcm.sql` |
+**Bước 3: Cài đặt thư viện Python**
+```powershell
+pip install -r requirements.txt
+```
 
-Khong can `sql/init.sql` nua vi Docker Compose da tu tao database chinh qua `POSTGRES_DB`.
+**Bước 4: Bơm dữ liệu mẫu (Mock Data)**
+Chạy script Python dưới đây. Script sẽ tự động kết nối 5 database, insert dữ liệu chung (Khoa, Học phần) và dữ liệu cục bộ (Sinh viên, Phòng học, Lớp HP) đúng theo nguyên tắc phân mảnh:
+```powershell
+python seed_data.py
+```
