@@ -1,0 +1,1 @@
+-- Create shared tables for all sites here.

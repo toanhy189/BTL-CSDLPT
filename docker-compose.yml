@@ -1,0 +1,67 @@
+services:
+  postgres_hoalac:
+    image: postgres:16
+    container_name: postgres_hoalac
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: toantk178@
+      POSTGRES_DB: site_hoalac
+    ports:
+      - "5440:5432"
+    volumes:
+      - postgres_hoalac_data:/var/lib/postgresql/data
+
+  postgres_ngoctruc:
+    image: postgres:16
+    container_name: postgres_ngoctruc
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: toantk178@
+      POSTGRES_DB: site_ngoctruc
+    ports:
+      - "5441:5432"
+    volumes:
+      - postgres_ngoctruc_data:/var/lib/postgresql/data
+
+  postgres_hadong:
+    image: postgres:16
+    container_name: postgres_hadong
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: toantk178@
+      POSTGRES_DB: site_hadong
+    ports:
+      - "5442:5432"
+    volumes:
+      - postgres_hadong_data:/var/lib/postgresql/data
+
+  postgres_caugiay:
+    image: postgres:16
+    container_name: postgres_caugiay
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: toantk178@
+      POSTGRES_DB: site_caugiay
+    ports:
+      - "5443:5432"
+    volumes:
+      - postgres_caugiay_data:/var/lib/postgresql/data
+
+  postgres_hcm:
+    image: postgres:16
+    container_name: postgres_hcm
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: toantk178@
+      POSTGRES_DB: site_hcm
+    ports:
+      - "5444:5432"
+    volumes:
+      - postgres_hcm_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_hoalac_data:
+  postgres_ngoctruc_data:
+  postgres_hadong_data:
+  postgres_caugiay_data:
+  postgres_hcm_data:
