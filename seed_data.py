@@ -1,3 +1,5 @@
+"""Module phục vụ nghiệp vụ seed data trong hệ thống đăng ký học phần phân tán."""
+
 import random
 import sys
 
@@ -135,7 +137,9 @@ LICH_HOC_DATA["HL"].append(
 )
 
 
+# Nạp dữ liệu dùng chung cần nhân bản sang tất cả site.
 def seed_replicated_data(conn):
+    """Nạp dữ liệu dùng chung cần nhân bản sang tất cả site."""
     cursor = conn.cursor()
     execute_values(
         cursor,
@@ -156,7 +160,9 @@ def seed_replicated_data(conn):
     cursor.close()
 
 
+# Nạp dữ liệu phân mảnh riêng cho từng site/cơ sở.
 def seed_fragmented_data(conn, site_code):
+    """Nạp dữ liệu phân mảnh riêng cho từng site/cơ sở."""
     cursor = conn.cursor()
     if site_code in PHONG_HOC_DATA:
         execute_values(
@@ -192,7 +198,9 @@ def seed_fragmented_data(conn, site_code):
     cursor.close()
 
 
+# Điểm vào của module, chuẩn bị dữ liệu/giao diện rồi điều phối sang luồng nghiệp vụ phù hợp.
 def main():
+    """Điểm vào của module, chuẩn bị dữ liệu/giao diện rồi điều phối sang luồng nghiệp vụ phù hợp."""
     print("=======================================")
     print(" BAT DAU SINH DU LIEU MAU ")
     print("=======================================")

@@ -1,4 +1,4 @@
-"""Cac truy van phan tan doc du lieu tu 5 PostgreSQL site."""
+"""Truy vấn phân tán của bản Streamlit cũ, gom dữ liệu từ nhiều site thành DataFrame."""
 
 import warnings
 
@@ -28,29 +28,33 @@ ALLOWED_TABLES = {
 }
 
 
+# Đổi mã site sang tên hiển thị thân thiện trên giao diện.
 def get_site_display_name(site_code):
-    """Lay ten hien thi cua site."""
+    """Đổi mã site sang tên hiển thị thân thiện trên giao diện."""
     return SITE_NAMES.get(site_code, site_code)
 
 
+# Bổ sung cột site_code và site_name sau khi đọc dữ liệu từ một site.
 def _add_site_columns(df, site_code):
-    """Them thong tin site vao DataFrame tra ve."""
+    """Bổ sung cột site_code và site_name sau khi đọc dữ liệu từ một site."""
     df = df.copy()
     df["site_code"] = site_code
     df["site_name"] = get_site_display_name(site_code)
     return df
 
 
+# Ghép các DataFrame không rỗng thành một bảng kết quả chung.
 def _concat_frames(frames):
-    """Gop cac DataFrame, neu khong co du lieu thi tra ve DataFrame rong."""
+    """Ghép các DataFrame không rỗng thành một bảng kết quả chung."""
     non_empty_frames = [frame for frame in frames if frame is not None and not frame.empty]
     if not non_empty_frames:
         return pd.DataFrame()
     return pd.concat(non_empty_frames, ignore_index=True)
 
 
+# Chạy cùng một truy vấn trên toàn bộ site rồi gom kết quả.
 def _read_all_sites_query(query, params=None):
-    """Doc cung mot query tren tat ca site va bo qua site bi loi."""
+    """Chạy cùng một truy vấn trên toàn bộ site rồi gom kết quả."""
     frames = []
     for site_code in SITE_CODES:
         df = read_query(site_code, query, params)
@@ -59,8 +63,9 @@ def _read_all_sites_query(query, params=None):
     return _concat_frames(frames)
 
 
+# Đọc dữ liệu bằng một câu SQL trên site được chọn và gắn thông tin site.
 def read_query(site_code, query, params=None):
-    """Doc query tren mot site bang pandas va dong connection sau khi doc."""
+    """Đọc dữ liệu bằng một câu SQL trên site được chọn và gắn thông tin site."""
     conn = None
     try:
         conn = get_connection(site_code)
@@ -80,8 +85,9 @@ def read_query(site_code, query, params=None):
             conn.close()
 
 
+# Đọc toàn bộ một bảng hợp lệ tại site được chọn để phục vụ quản trị nhanh.
 def read_table(site_code, table_name):
-    """Doc toan bo du lieu cua mot bang tren mot site."""
+    """Đọc toàn bộ một bảng hợp lệ tại site được chọn để phục vụ quản trị nhanh."""
     normalized_table = table_name.strip().lower()
     if normalized_table not in ALLOWED_TABLES:
         print(f"[{site_code}] Bang khong hop le: {table_name}")
@@ -90,8 +96,9 @@ def read_table(site_code, table_name):
     return read_query(site_code, f"SELECT * FROM {normalized_table};")
 
 
+# Đọc cùng một bảng từ tất cả site rồi ghép thành dữ liệu toàn hệ thống.
 def read_all_sites(table_name):
-    """Doc mot bang tren tat ca site."""
+    """Đọc cùng một bảng từ tất cả site rồi ghép thành dữ liệu toàn hệ thống."""
     frames = []
     for site_code in SITE_CODES:
         df = read_table(site_code, table_name)
@@ -100,8 +107,9 @@ def read_all_sites(table_name):
     return _concat_frames(frames)
 
 
+# Thống kê số lượt đăng ký học phần theo từng cơ sở mở lớp.
 def thong_ke_dang_ky_theo_co_so():
-    """Thong ke so luot dang ky hoc phan theo co so mo lop."""
+    """Thống kê số lượt đăng ký học phần theo từng cơ sở mở lớp."""
     query = """
         SELECT
             l.id_headquarter,
@@ -125,8 +133,9 @@ def thong_ke_dang_ky_theo_co_so():
     )
 
 
+# Tìm các học phần có nhiều lượt đăng ký nhất trên toàn hệ thống.
 def hoc_phan_dang_ky_nhieu_nhat():
-    """Tim hoc phan co nhieu luot dang ky nhat toan truong."""
+    """Tìm các học phần có nhiều lượt đăng ký nhất trên toàn hệ thống."""
     query = """
         SELECT
             hp.id AS id_subject,
@@ -152,8 +161,9 @@ def hoc_phan_dang_ky_nhieu_nhat():
     )
 
 
+# Liệt kê sinh viên đăng ký lớp học phần khác cơ sở quản lý hồ sơ của mình.
 def sinh_vien_dang_ky_cheo_co_so():
-    """Lay danh sach sinh vien dang ky lop hoc phan o co so khac."""
+    """Liệt kê sinh viên đăng ký lớp học phần khác cơ sở quản lý hồ sơ của mình."""
     query = """
         SELECT
             d.id_student,
@@ -186,8 +196,9 @@ def sinh_vien_dang_ky_cheo_co_so():
     )
 
 
+# Tính tỷ lệ lấp đầy, sức chứa và số chỗ còn lại của từng lớp học phần.
 def ty_le_lap_day_lop_hoc_phan():
-    """Tinh ty le lap day cua cac lop hoc phan tren toan he thong."""
+    """Tính tỷ lệ lấp đầy, sức chứa và số chỗ còn lại của từng lớp học phần."""
     query = """
         SELECT
             l.id AS id_class,
@@ -223,8 +234,9 @@ def ty_le_lap_day_lop_hoc_phan():
     return df[columns].sort_values(["id_headquarter", "id_class"], ignore_index=True)
 
 
+# Đếm số lớp học phần đang mở theo từng cơ sở.
 def thong_ke_so_lop_theo_co_so():
-    """Thong ke so lop hoc phan mo theo tung co so."""
+    """Đếm số lớp học phần đang mở theo từng cơ sở."""
     query = """
         SELECT
             id_headquarter,
@@ -245,8 +257,9 @@ def thong_ke_so_lop_theo_co_so():
     )
 
 
+# Đếm số sinh viên thuộc từng cơ sở quản lý.
 def thong_ke_sinh_vien_theo_co_so():
-    """Thong ke so sinh vien theo co so."""
+    """Đếm số sinh viên thuộc từng cơ sở quản lý."""
     query = """
         SELECT
             id_headquarter,
@@ -267,8 +280,9 @@ def thong_ke_sinh_vien_theo_co_so():
     )
 
 
+# Gom danh sách lớp học phần toàn trường kèm cơ sở, học phần, sĩ số và phòng học.
 def danh_sach_lop_hoc_phan_toan_truong():
-    """Lay danh sach lop hoc phan tren toan bo 5 site."""
+    """Gom danh sách lớp học phần toàn trường kèm cơ sở, học phần, sĩ số và phòng học."""
     query = """
         SELECT
             l.id AS id_class,

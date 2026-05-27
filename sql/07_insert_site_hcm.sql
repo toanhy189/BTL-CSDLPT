@@ -1,1 +1,1 @@
--- Insert seed data for HCM site here.
+-- Nạp dữ liệu riêng cho site Hồ Chí Minh, gồm sinh viên, giảng viên, phòng học, lớp học phần và lịch học.

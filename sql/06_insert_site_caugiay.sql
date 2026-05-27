@@ -1,1 +1,1 @@
--- Insert seed data for Cau Giay site here.
+-- Nạp dữ liệu riêng cho site Cầu Giấy, gồm sinh viên, giảng viên, phòng học, lớp học phần và lịch học.

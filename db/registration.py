@@ -1,11 +1,12 @@
-"""Course registration operations."""
+"""Tầng truy cập dữ liệu cho nghiệp vụ registration, thực hiện đọc/ghi PostgreSQL theo site."""
 
 from db.connections import get_connection
 from db.logs import write_log
 
 
+# Đăng ký học phần: kiểm tra sinh viên, khóa lớp, ghi hoặc kích hoạt lại đăng ký, tăng sĩ số và ghi log.
 def register_course(site_code, student_id, course_id):
-    """Insert one course registration into the selected distributed site."""
+    """Đăng ký học phần: kiểm tra sinh viên, khóa lớp, ghi hoặc kích hoạt lại đăng ký, tăng sĩ số và ghi log."""
     sql = """
         INSERT INTO registrations (student_id, course_id)
         VALUES (%s, %s)

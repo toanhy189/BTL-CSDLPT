@@ -1,3 +1,6 @@
+-- Script tạo schema nghiệp vụ đăng ký học phần.
+-- Luồng dữ liệu chính: Cơ sở/Khoa -> Học phần/Phòng học -> Giảng viên/Sinh viên -> Lớp học phần/Lịch học -> Đăng ký.
+
 -- =========================================================
 -- 1. XÓA BẢNG NẾU ĐÃ TỒN TẠI
 -- =========================================================

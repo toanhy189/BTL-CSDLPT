@@ -1,4 +1,4 @@
-"""CRUD queries cho tung site PostgreSQL."""
+"""Tầng truy cập dữ liệu cho nghiệp vụ truy vấn, thực hiện đọc/ghi PostgreSQL theo site."""
 
 import warnings
 
@@ -7,7 +7,9 @@ import pandas as pd
 from db.connections import SITE_CODES, SITE_NAMES, get_connection
 
 
+# Đọc dữ liệu từ một site bằng pandas và đóng kết nối sau khi đọc xong.
 def _read_sql(site_code, query, params=None):
+    """Đọc dữ liệu từ một site bằng pandas và đóng kết nối sau khi đọc xong."""
     conn = None
     try:
         conn = get_connection(site_code)
@@ -26,7 +28,9 @@ def _read_sql(site_code, query, params=None):
             conn.close()
 
 
+# Ghi dữ liệu vào một site với commit khi thành công và rollback khi lỗi.
 def _write_sql(site_code, query, params=None):
+    """Ghi dữ liệu vào một site với commit khi thành công và rollback khi lỗi."""
     conn = None
     try:
         conn = get_connection(site_code)
@@ -43,7 +47,9 @@ def _write_sql(site_code, query, params=None):
             conn.close()
 
 
+# Các bảng danh mục dùng chung phải được ghi đồng bộ lên mọi site.
 def _write_all_sites(query, params=None):
+    """Ghi cùng một thay đổi lên toàn bộ site trong bản Streamlit cũ."""
     messages = []
     ok_count = 0
     for site_code in SITE_CODES:
@@ -58,27 +64,39 @@ def _write_all_sites(query, params=None):
     return True, "Thao tác thành công trên cả 5 site"
 
 
+# Chuẩn hóa chuỗi rỗng thành None trước khi ghi xuống database.
 def _empty_to_none(value):
+    """Chuẩn hóa chuỗi rỗng thành None trước khi ghi xuống database."""
     return None if value == "" else value
 
 
+# Giữ API cũ để lấy danh mục cơ sở từ site đang chọn.
 def get_all_sites_table(site_code):
+    """Giữ API cũ để lấy danh mục cơ sở từ site đang chọn."""
     return get_headquarters(site_code)
 
 
+# Lấy dữ liệu khoa từ nguồn phù hợp để trả về cho tầng gọi phía trên.
 def get_departments(site_code):
+    """Lấy dữ liệu khoa từ nguồn phù hợp để trả về cho tầng gọi phía trên."""
     return _read_sql(site_code, "SELECT * FROM khoa ORDER BY id;")
 
 
+# Lấy danh sách học phần để dùng trong form chọn môn/lớp.
 def get_subjects(site_code):
+    """Lấy danh sách học phần để dùng trong form chọn môn/lớp."""
     return _read_sql(site_code, "SELECT * FROM hocphan ORDER BY id;")
 
 
+# Lấy dữ liệu cơ sở đào tạo từ nguồn phù hợp để trả về cho tầng gọi phía trên.
 def get_headquarters(site_code):
+    """Lấy dữ liệu cơ sở đào tạo từ nguồn phù hợp để trả về cho tầng gọi phía trên."""
     return _read_sql(site_code, "SELECT * FROM coso ORDER BY id;")
 
 
+# Thêm mới dữ liệu cơ sở đào tạo sau khi nhận thông tin từ form hoặc API.
 def add_headquarter(site_code, id, name_headquarter, address):
+    """Thêm mới dữ liệu cơ sở đào tạo sau khi nhận thông tin từ form hoặc API."""
     return _write_sql(
         site_code,
         "INSERT INTO coso (id, name_headquarter, address) VALUES (%s, %s, %s);",
@@ -86,7 +104,9 @@ def add_headquarter(site_code, id, name_headquarter, address):
     )
 
 
+# Cập nhật dữ liệu cơ sở đào tạo theo khóa bản ghi được người dùng chọn.
 def update_headquarter(site_code, id, name_headquarter, address):
+    """Cập nhật dữ liệu cơ sở đào tạo theo khóa bản ghi được người dùng chọn."""
     return _write_sql(
         site_code,
         "UPDATE coso SET name_headquarter = %s, address = %s WHERE id = %s;",
@@ -94,15 +114,21 @@ def update_headquarter(site_code, id, name_headquarter, address):
     )
 
 
+# Xóa dữ liệu cơ sở đào tạo theo khóa bản ghi được người dùng chọn.
 def delete_headquarter(site_code, id):
+    """Xóa dữ liệu cơ sở đào tạo theo khóa bản ghi được người dùng chọn."""
     return _write_sql(site_code, "DELETE FROM coso WHERE id = %s;", (id,))
 
 
+# Lấy dữ liệu sinh viên từ nguồn phù hợp để trả về cho tầng gọi phía trên.
 def get_students(site_code):
+    """Lấy dữ liệu sinh viên từ nguồn phù hợp để trả về cho tầng gọi phía trên."""
     return _read_sql(site_code, "SELECT * FROM sinhvien ORDER BY id;")
 
 
+# Thêm mới dữ liệu sinh viên sau khi nhận thông tin từ form hoặc API.
 def add_student(site_code, data):
+    """Thêm mới dữ liệu sinh viên sau khi nhận thông tin từ form hoặc API."""
     return _write_sql(
         site_code,
         """
@@ -126,7 +152,9 @@ def add_student(site_code, data):
     )
 
 
+# Cập nhật dữ liệu sinh viên theo khóa bản ghi được người dùng chọn.
 def update_student(site_code, student_id, data):
+    """Cập nhật dữ liệu sinh viên theo khóa bản ghi được người dùng chọn."""
     return _write_sql(
         site_code,
         """
@@ -155,15 +183,21 @@ def update_student(site_code, student_id, data):
     )
 
 
+# Xóa dữ liệu sinh viên theo khóa bản ghi được người dùng chọn.
 def delete_student(site_code, student_id):
+    """Xóa dữ liệu sinh viên theo khóa bản ghi được người dùng chọn."""
     return _write_sql(site_code, "DELETE FROM sinhvien WHERE id = %s;", (student_id,))
 
 
+# Lấy dữ liệu giảng viên từ nguồn phù hợp để trả về cho tầng gọi phía trên.
 def get_teachers(site_code):
+    """Lấy dữ liệu giảng viên từ nguồn phù hợp để trả về cho tầng gọi phía trên."""
     return _read_sql(site_code, "SELECT * FROM giangvien ORDER BY id;")
 
 
+# Thêm mới dữ liệu giảng viên sau khi nhận thông tin từ form hoặc API.
 def add_teacher(site_code, data):
+    """Thêm mới dữ liệu giảng viên sau khi nhận thông tin từ form hoặc API."""
     return _write_sql(
         site_code,
         """
@@ -185,7 +219,9 @@ def add_teacher(site_code, data):
     )
 
 
+# Cập nhật dữ liệu giảng viên theo khóa bản ghi được người dùng chọn.
 def update_teacher(site_code, teacher_id, data):
+    """Cập nhật dữ liệu giảng viên theo khóa bản ghi được người dùng chọn."""
     return _write_sql(
         site_code,
         """
@@ -210,22 +246,30 @@ def update_teacher(site_code, teacher_id, data):
     )
 
 
+# Xóa dữ liệu giảng viên theo khóa bản ghi được người dùng chọn.
 def delete_teacher(site_code, teacher_id):
+    """Xóa dữ liệu giảng viên theo khóa bản ghi được người dùng chọn."""
     return _write_sql(site_code, "DELETE FROM giangvien WHERE id = %s;", (teacher_id,))
 
 
+# Lấy dữ liệu học phần từ nguồn phù hợp để trả về cho tầng gọi phía trên.
 def get_courses(site_code):
+    """Lấy dữ liệu học phần từ nguồn phù hợp để trả về cho tầng gọi phía trên."""
     return _read_sql(site_code, "SELECT * FROM hocphan ORDER BY id;")
 
 
+# Thêm mới dữ liệu học phần to all các site sau khi nhận thông tin từ form hoặc API.
 def add_course_to_all_sites(data):
+    """Thêm mới dữ liệu học phần to all các site sau khi nhận thông tin từ form hoặc API."""
     return _write_all_sites(
         "INSERT INTO hocphan (id, name_subject, number_of_credit, id_department) VALUES (%s, %s, %s, %s);",
         (data["id"], data["name_subject"], data["number_of_credit"], data["id_department"]),
     )
 
 
+# Cập nhật dữ liệu học phần all các site theo khóa bản ghi được người dùng chọn.
 def update_course_all_sites(course_id, data):
+    """Cập nhật dữ liệu học phần all các site theo khóa bản ghi được người dùng chọn."""
     return _write_all_sites(
         """
         UPDATE hocphan
@@ -236,15 +280,21 @@ def update_course_all_sites(course_id, data):
     )
 
 
+# Xóa dữ liệu học phần all các site theo khóa bản ghi được người dùng chọn.
 def delete_course_all_sites(course_id):
+    """Xóa dữ liệu học phần all các site theo khóa bản ghi được người dùng chọn."""
     return _write_all_sites("DELETE FROM hocphan WHERE id = %s;", (course_id,))
 
 
+# Lấy dữ liệu phòng học từ nguồn phù hợp để trả về cho tầng gọi phía trên.
 def get_rooms(site_code):
+    """Lấy dữ liệu phòng học từ nguồn phù hợp để trả về cho tầng gọi phía trên."""
     return _read_sql(site_code, "SELECT * FROM phonghoc ORDER BY id;")
 
 
+# Thêm mới dữ liệu phòng học sau khi nhận thông tin từ form hoặc API.
 def add_room(site_code, data):
+    """Thêm mới dữ liệu phòng học sau khi nhận thông tin từ form hoặc API."""
     return _write_sql(
         site_code,
         "INSERT INTO phonghoc (id, name_room, capacity, id_headquarter) VALUES (%s, %s, %s, %s);",
@@ -252,7 +302,9 @@ def add_room(site_code, data):
     )
 
 
+# Cập nhật dữ liệu phòng học theo khóa bản ghi được người dùng chọn.
 def update_room(site_code, room_id, data):
+    """Cập nhật dữ liệu phòng học theo khóa bản ghi được người dùng chọn."""
     return _write_sql(
         site_code,
         "UPDATE phonghoc SET name_room = %s, capacity = %s, id_headquarter = %s WHERE id = %s;",
@@ -260,11 +312,15 @@ def update_room(site_code, room_id, data):
     )
 
 
+# Xóa dữ liệu phòng học theo khóa bản ghi được người dùng chọn.
 def delete_room(site_code, room_id):
+    """Xóa dữ liệu phòng học theo khóa bản ghi được người dùng chọn."""
     return _write_sql(site_code, "DELETE FROM phonghoc WHERE id = %s;", (room_id,))
 
 
+# Lấy dữ liệu lớp học phần từ nguồn phù hợp để trả về cho tầng gọi phía trên.
 def get_class_sections(site_code):
+    """Lấy dữ liệu lớp học phần từ nguồn phù hợp để trả về cho tầng gọi phía trên."""
     return _read_sql(
         site_code,
         """
@@ -294,7 +350,9 @@ def get_class_sections(site_code):
     )
 
 
+# Thêm mới dữ liệu lớp học phần sau khi nhận thông tin từ form hoặc API.
 def add_class_section(site_code, data):
+    """Thêm mới dữ liệu lớp học phần sau khi nhận thông tin từ form hoặc API."""
     return _write_sql(
         site_code,
         """
@@ -318,7 +376,9 @@ def add_class_section(site_code, data):
     )
 
 
+# Cập nhật dữ liệu lớp học phần theo khóa bản ghi được người dùng chọn.
 def update_class_section(site_code, class_id, data):
+    """Cập nhật dữ liệu lớp học phần theo khóa bản ghi được người dùng chọn."""
     return _write_sql(
         site_code,
         """
@@ -347,11 +407,15 @@ def update_class_section(site_code, class_id, data):
     )
 
 
+# Xóa dữ liệu lớp học phần theo khóa bản ghi được người dùng chọn.
 def delete_class_section(site_code, class_id):
+    """Xóa dữ liệu lớp học phần theo khóa bản ghi được người dùng chọn."""
     return _write_sql(site_code, "DELETE FROM lophocphan WHERE id = %s;", (class_id,))
 
 
+# Lấy dữ liệu lịch học từ nguồn phù hợp để trả về cho tầng gọi phía trên.
 def get_schedules(site_code):
+    """Lấy dữ liệu lịch học từ nguồn phù hợp để trả về cho tầng gọi phía trên."""
     return _read_sql(
         site_code,
         """
@@ -373,7 +437,9 @@ def get_schedules(site_code):
     )
 
 
+# Thêm mới dữ liệu lịch học sau khi nhận thông tin từ form hoặc API.
 def add_schedule(site_code, data):
+    """Thêm mới dữ liệu lịch học sau khi nhận thông tin từ form hoặc API."""
     return _write_sql(
         site_code,
         """
@@ -391,7 +457,9 @@ def add_schedule(site_code, data):
     )
 
 
+# Cập nhật dữ liệu lịch học theo khóa bản ghi được người dùng chọn.
 def update_schedule(site_code, schedule_id, data):
+    """Cập nhật dữ liệu lịch học theo khóa bản ghi được người dùng chọn."""
     return _write_sql(
         site_code,
         """
@@ -410,11 +478,15 @@ def update_schedule(site_code, schedule_id, data):
     )
 
 
+# Xóa dữ liệu lịch học theo khóa bản ghi được người dùng chọn.
 def delete_schedule(site_code, schedule_id):
+    """Xóa dữ liệu lịch học theo khóa bản ghi được người dùng chọn."""
     return _write_sql(site_code, "DELETE FROM lichhoc WHERE id = %s;", (schedule_id,))
 
 
+# Lấy dữ liệu registration by sinh viên từ nguồn phù hợp để trả về cho tầng gọi phía trên.
 def get_registration_by_student(student_id):
+    """Lấy dữ liệu registration by sinh viên từ nguồn phù hợp để trả về cho tầng gọi phía trên."""
     frames = []
     query = """
         SELECT
@@ -442,7 +514,9 @@ def get_registration_by_student(student_id):
     return pd.concat(frames, ignore_index=True)
 
 
+# Lấy dữ liệu registration by class từ nguồn phù hợp để trả về cho tầng gọi phía trên.
 def get_registration_by_class(site_code, class_id):
+    """Lấy dữ liệu registration by class từ nguồn phù hợp để trả về cho tầng gọi phía trên."""
     return _read_sql(
         site_code,
         """

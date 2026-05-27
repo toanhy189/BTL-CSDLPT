@@ -1,1 +1,1 @@
--- Insert seed data for Ha Dong site here.
+-- Nạp dữ liệu riêng cho site Hà Đông, gồm sinh viên, giảng viên, phòng học, lớp học phần và lịch học.

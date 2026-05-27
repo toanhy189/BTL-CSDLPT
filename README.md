@@ -1,49 +1,44 @@
-# Hệ Thống Đăng Ký Học Phần Nhiều Cơ Sở
+# Hệ thống đăng ký học phần nhiều cơ sở
 
 Đồ án CSDL phân tán mô phỏng hệ thống đăng ký học phần trên 5 cơ sở đào tạo.
 
-## Công Nghệ
+## Kiến trúc
 
+```text
+Streamlit Frontend -> FastAPI Backend -> psycopg2/pandas -> 5 PostgreSQL site
+```
+
+- Frontend: `frontend/streamlit_app`
+- Backend API: `backend`
+- Database: 5 PostgreSQL server chạy bằng Docker
+- Xác thực: JWT
+- Mật khẩu tài khoản: bcrypt
+- Phân quyền: `ADMIN`, `GIANG_VIEN`, `SINH_VIEN`
+
+## Công nghệ
 - Python
 - Streamlit
+- FastAPI
 - PostgreSQL
 - Docker Compose
 - psycopg2
 - pandas
+- bcrypt
+- PyJWT
 - pgAdmin
 
-## Kiến Trúc
-
-Hệ thống dùng 5 PostgreSQL server Docker, mỗi server là một site:
+## 5 site PostgreSQL
 
 | Site | Container | Database | Port |
 | --- | --- | --- | --- |
-| Hòa Lạc | `postgres_hoalac` | `site_hoalac` | `5440` |
-| Ngọc Trục | `postgres_ngoctruc` | `site_ngoctruc` | `5441` |
-| Hà Đông | `postgres_hadong` | `site_hadong` | `5442` |
-| Cầu Giấy | `postgres_caugiay` | `site_caugiay` | `5443` |
-| TP.HCM | `postgres_hcm` | `site_hcm` | `5444` |
+| HL - Hòa Lạc | `postgres_hoalac` | `site_hoalac` | `5440` |
+| NT - Ngọc Trục | `postgres_ngoctruc` | `site_ngoctruc` | `5441` |
+| HD - Hà Đông | `postgres_hadong` | `site_hadong` | `5442` |
+| CG - Cầu Giấy | `postgres_caugiay` | `site_caugiay` | `5443` |
+| HCM - TP.HCM | `postgres_hcm` | `site_hcm` | `5444` |
 
-Luồng xử lý:
 
-```text
-Streamlit UI -> Python services -> psycopg2 -> 5 PostgreSQL server
-```
-
-Truy vấn phân tán đọc dữ liệu từ 5 site rồi tổng hợp bằng pandas.
-
-## Thông Tin Database
-
-```text
-Host: localhost
-User: postgres
-Password: toantk178@
-Ports: 5440, 5441, 5442, 5443, 5444
-```
-
-Mật khẩu trên đang khớp với `docker-compose.yml` và `db/connections.py` hiện tại.
-
-## Cài Thư Viện
+## Cài thư viện
 
 Chạy trong thư mục `BTL-CSDLPT`:
 
@@ -51,99 +46,115 @@ Chạy trong thư mục `BTL-CSDLPT`:
 pip install -r requirements.txt
 ```
 
-## Chạy Database
+## Chạy database
 
 ```powershell
 docker compose up -d
-```
-
-Kiểm tra container:
-
-```powershell
-docker ps
 docker compose ps
 ```
 
-## Tạo Bảng Và Import Dữ Liệu
+## Tạo bảng và import dữ liệu
 
-Cách nhanh cho project hiện tại:
+Cách nhanh:
 
 ```powershell
 .\run_sql.bat
 python seed_data.py
 ```
 
-`run_sql.bat` chạy `sql/01_create_tables.sql` trên cả 5 server. `seed_data.py` sinh dữ liệu mẫu cho cơ sở, khoa, học phần, sinh viên, giảng viên, phòng học, lớp học phần và lịch học.
+Sau khi backend FastAPI khởi động, hệ thống tự tạo thêm bảng `taikhoan` nếu chưa có và seed tài khoản demo.
 
-Nếu muốn chạy SQL thủ công trong pgAdmin, mỗi server chạy:
-
-1. `sql/01_create_tables.sql`
-2. `sql/02_insert_common_data.sql`
-3. File site riêng:
-
-| Site | File SQL |
-| --- | --- |
-| HL | `sql/03_insert_site_hoalac.sql` |
-| NT | `sql/04_insert_site_ngoctruc.sql` |
-| HD | `sql/05_insert_site_hadong.sql` |
-| CG | `sql/06_insert_site_caugiay.sql` |
-| HCM | `sql/07_insert_site_hcm.sql` |
-
-## Kết Nối pgAdmin
-
-Trong pgAdmin, tự register 5 server connection:
-
-| Name | Host | Port | Maintenance database |
-| --- | --- | --- | --- |
-| `site_hoalac` | `localhost` | `5440` | `site_hoalac` |
-| `site_ngoctruc` | `localhost` | `5441` | `site_ngoctruc` |
-| `site_hadong` | `localhost` | `5442` | `site_hadong` |
-| `site_caugiay` | `localhost` | `5443` | `site_caugiay` |
-| `site_hcm` | `localhost` | `5444` | `site_hcm` |
-
-Username: `postgres`
-
-Password: `toantk178@`
-
-pgAdmin không tự hiện container Docker, nên phải register thủ công.
-
-## Chạy Web
+## Chạy backend FastAPI
 
 ```powershell
-streamlit run app.py
+uvicorn backend.main:app --reload --port 8000
 ```
 
-Mở trình duyệt tại:
+Kiểm tra API:
+
+```text
+http://localhost:8000/health
+http://localhost:8000/docs
+```
+
+## Chạy frontend Streamlit
+
+Mở terminal khác, vẫn trong thư mục `BTL-CSDLPT`:
+
+```powershell
+streamlit run frontend/streamlit_app/app.py
+```
+
+Frontend chạy tại:
 
 ```text
 http://localhost:8501
 ```
 
-## Test Truy Vấn Phân Tán
+## Tài khoản demo
 
-```powershell
-python test_queries.py
-```
+Backend tự tạo tài khoản khi khởi động:
 
-## Chức Năng Chính
+| Role | Username | Password | Ghi chú |
+| --- | --- | --- | --- |
+| ADMIN | `admin` | `admin123` | Quản trị hệ thống |
+| SINH_VIEN | mã sinh viên viết thường | `123456` | Ví dụ `hl_sv001` nếu dữ liệu có mã `HL_SV001` |
+| GIANG_VIEN | mã giảng viên viết thường | `123456` | Ví dụ `hl_gv001` nếu dữ liệu có mã `HL_GV001` |
 
-- Tổng quan hệ thống và trạng thái kết nối 5 site
-- Quản lý cơ sở đào tạo
-- Quản lý sinh viên
-- Quản lý giảng viên
-- Quản lý học phần
-- Quản lý lớp học phần
-- Quản lý phòng học và lịch học
-- Đăng ký học phần
-- Hủy đăng ký học phần
-- Tra cứu kết quả đăng ký
+## Chức năng theo role
+
+### ADMIN
+
+- Tổng quan hệ thống
+- Trạng thái kết nối 5 site
+- Quản lý sinh viên, giảng viên, học phần, lớp học phần, phòng học, lịch học
 - Truy vấn phân tán / thống kê
 - Mô phỏng đăng ký đồng thời
-- Nhật ký thao tác
+- Xem nhật ký thao tác
 
-## Truy Vấn Phân Tán
+### SINH_VIEN
 
-Các truy vấn hiện có:
+- Xem trang chủ và hồ sơ cá nhân
+- Xem lớp học phần mở
+- Đăng ký học phần
+- Hủy đăng ký
+- Tra cứu kết quả đăng ký
+- Xem thời khóa biểu
+
+### GIANG_VIEN
+
+- Xem lớp học phần phụ trách
+- Xem danh sách sinh viên theo lớp
+- Xem lịch dạy
+- Xem thống kê lớp
+
+## API chính
+
+- `POST /auth/login`
+- `GET /auth/me`
+- `GET /admin/dashboard`
+- `GET /admin/sites/status`
+- `GET /admin/students?site_code=HL`
+- `POST /admin/students`
+- `POST /student/register`
+- `POST /student/cancel`
+- `GET /student/registrations`
+- `GET /student/open-classes`
+- `GET /student/schedule`
+- `GET /teacher/classes`
+- `GET /teacher/schedule`
+- `GET /distributed/registration-by-site`
+- `GET /distributed/top-courses`
+- `GET /distributed/cross-site-students`
+- `GET /distributed/fill-rate`
+- `GET /distributed/classes-by-site`
+- `GET /distributed/students-by-site`
+- `POST /concurrency/simulate-registration`
+- `GET /concurrency/logs`
+
+## Truy vấn phân tán
+
+Các truy vấn đọc dữ liệu từ 5 site, sau đó tổng hợp bằng pandas:
 
 - Thống kê số lượt đăng ký học phần theo cơ sở
 - Học phần có nhiều sinh viên đăng ký nhất toàn trường
@@ -153,21 +164,35 @@ Các truy vấn hiện có:
 - Thống kê số sinh viên theo cơ sở
 - Danh sách lớp học phần toàn trường
 
-## Xử Lý Đồng Thời
+## Xử lý đồng thời
 
-Đăng ký học phần dùng transaction:
+Đăng ký học phần được xử lý trong transaction:
 
-- Kiểm tra sinh viên tại site gốc của sinh viên
+- Kiểm tra sinh viên tại site gốc
 - Ghi đăng ký tại site mở lớp
 - Khóa dòng lớp học phần bằng `SELECT ... FOR UPDATE`
 - Kiểm tra `number_of_student < max_student`
-- Insert/khôi phục đăng ký
+- Insert đăng ký
 - Tăng sĩ số lớp
 - Commit hoặc rollback
 
-Mô phỏng đồng thời dùng `threading`, nhiều sinh viên cùng đăng ký một lớp để chứng minh không vượt sĩ số.
+Trang mô phỏng đồng thời dùng `threading` để nhiều sinh viên đăng ký cùng lúc một lớp. Kết quả chứng minh sĩ số không vượt `max_student`.
 
-## Dừng Hệ Thống
+## Kết nối pgAdmin
+
+Trong pgAdmin, register thủ công 5 server:
+
+| Name | Host | Port | Maintenance database |
+| --- | --- | --- | --- |
+| `site_hoalac` | `localhost` | `5440` | `site_hoalac` |
+| `site_ngoctruc` | `localhost` | `5441` | `site_ngoctruc` |
+| `site_hadong` | `localhost` | `5442` | `site_hadong` |
+| `site_caugiay` | `localhost` | `5443` | `site_caugiay` |
+| `site_hcm` | `localhost` | `5444` | `site_hcm` |
+
+pgAdmin không tự hiện container Docker, nên phải register từng server.
+
+## Dừng hệ thống
 
 Tắt container nhưng giữ dữ liệu:
 
@@ -184,12 +209,4 @@ docker compose up -d
 python seed_data.py
 ```
 
-## Ghi Chú Schema
-
-Quan hệ phòng học và lớp học phần:
-
-```text
-LopHocPhan 1 - n LichHoc n - 1 PhongHoc
-```
-
-Vì vậy `lophocphan` không lưu `id_room`; phòng học được gắn qua bảng `lichhoc`.
+Sau đó chạy lại backend để tạo/seed bảng `taikhoan`.

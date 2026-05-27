@@ -1,1 +1,1 @@
--- Insert common seed data here.
+-- Nạp dữ liệu dùng chung cho toàn hệ thống, ví dụ cơ sở, khoa và học phần được nhân bản ở các site.

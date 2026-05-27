@@ -1,1 +1,1 @@
--- Insert seed data for Ngoc Truc site here.
+-- Nạp dữ liệu riêng cho site Ngọc Trục, gồm sinh viên, giảng viên, phòng học, lớp học phần và lịch học.

@@ -1,0 +1,12 @@
+"""Service nghiệp vụ truy vấn phân tán service, gom xử lý trung gian giữa API và tầng database."""
+
+from backend.db import distributed_queries
+
+
+thong_ke_dang_ky_theo_co_so = distributed_queries.thong_ke_dang_ky_theo_co_so
+hoc_phan_dang_ky_nhieu_nhat = distributed_queries.hoc_phan_dang_ky_nhieu_nhat
+sinh_vien_dang_ky_cheo_co_so = distributed_queries.sinh_vien_dang_ky_cheo_co_so
+ty_le_lap_day_lop_hoc_phan = distributed_queries.ty_le_lap_day_lop_hoc_phan
+thong_ke_so_lop_theo_co_so = distributed_queries.thong_ke_so_lop_theo_co_so
+thong_ke_sinh_vien_theo_co_so = distributed_queries.thong_ke_sinh_vien_theo_co_so
+danh_sach_lop_hoc_phan_toan_truong = distributed_queries.danh_sach_lop_hoc_phan_toan_truong

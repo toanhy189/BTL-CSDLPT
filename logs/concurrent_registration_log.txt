@@ -1,1 +1,3 @@
 Concurrent registration log.
+[2026-05-12 11:46:36] DANG_KY site=CG class=LHP-CG-006 student=SV-CG-0001 success=True
+[2026-05-14 23:51:36] DANG_KY site=HL class=LHP-HL-007 student=SV-HD-0001 success=True

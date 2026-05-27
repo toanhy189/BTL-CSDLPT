@@ -1,4 +1,4 @@
-"""Database connection helpers for the five distributed PostgreSQL sites."""
+"""Tầng truy cập dữ liệu cho nghiệp vụ kết nối, thực hiện đọc/ghi PostgreSQL theo site."""
 
 import psycopg2
 
@@ -51,19 +51,22 @@ SITE_NAMES = {
 }
 
 
+# Mở kết nối PostgreSQL đến đúng site/cơ sở theo mã được truyền vào.
 def get_connection(site_code):
-    """Open a psycopg2 connection to one distributed site."""
+    """Mở kết nối PostgreSQL đến đúng site/cơ sở theo mã được truyền vào."""
     config = DB_CONFIGS[site_code]
     return psycopg2.connect(**config)
 
 
+# Lấy dữ liệu all kết nối từ nguồn phù hợp để trả về cho tầng gọi phía trên.
 def get_all_connections():
-    """Open connections to all configured distributed sites."""
+    """Lấy dữ liệu all kết nối từ nguồn phù hợp để trả về cho tầng gọi phía trên."""
     return {site_code: get_connection(site_code) for site_code in SITE_CODES}
 
 
+# Thử kết nối một site và trả trạng thái để dashboard biết site online hay lỗi.
 def check_site_connection(site_code):
-    """Return connection status for one site without raising to the UI."""
+    """Thử kết nối một site và trả trạng thái để dashboard biết site online hay lỗi."""
     try:
         conn = get_connection(site_code)
         conn.close()

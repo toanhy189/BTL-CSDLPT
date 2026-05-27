@@ -1,24 +1,26 @@
-"""Router chinh cua ung dung Streamlit."""
+"""Router chính của bản Streamlit cũ, nhận menu từ sidebar rồi gọi trang nghiệp vụ tương ứng."""
 
 import streamlit as st
 
-from pages.cancel_page import render_cancel_page
-from pages.concurrency_page import render_concurrency_page
-from pages.dashboard_page import render_dashboard_page
-from pages.distributed_query_page import render_distributed_query_page
-from pages.log_page import render_log_page
-from pages.lookup_page import render_lookup_page
-from pages.management_page import render_management_page
-from pages.registration_page import render_registration_page
+from ui_pages._helpers import load_custom_css, render_main_header
+from ui_pages.cancel_page import render_cancel_page
+from ui_pages.concurrency_page import render_concurrency_page
+from ui_pages.dashboard_page import render_dashboard_page
+from ui_pages.distributed_query_page import render_distributed_query_page
+from ui_pages.log_page import render_log_page
+from ui_pages.lookup_page import render_lookup_page
+from ui_pages.management_page import render_management_page
+from ui_pages.registration_page import render_registration_page
 
 
 st.set_page_config(
-    page_title="Hệ thống đăng ký học phần nhiều cơ sở",
+    page_title="CSDL phân tán - Đăng ký học phần",
     page_icon="🎓",
     layout="wide",
 )
 
 
+# Danh sách menu là hợp đồng điều hướng giữa sidebar và các hàm render trang.
 MENU = [
     "Tổng quan",
     "Quản lý cơ sở đào tạo",
@@ -36,10 +38,23 @@ MENU = [
 ]
 
 
-def main():
-    st.sidebar.title("CSDL phân tán")
-    menu = st.sidebar.radio("Chức năng", MENU)
+# Vẽ sidebar điều hướng và trả về mục menu người dùng đang chọn.
+def render_sidebar():
+    """Vẽ sidebar điều hướng và trả về mục menu người dùng đang chọn."""
+    st.sidebar.markdown("## 🎓 CSDL phân tán")
+    st.sidebar.caption("Hệ thống đăng ký học phần nhiều cơ sở")
+    st.sidebar.divider()
+    return st.sidebar.radio("Điều hướng", MENU, label_visibility="collapsed")
 
+
+# Điểm vào của module, chuẩn bị dữ liệu/giao diện rồi điều phối sang luồng nghiệp vụ phù hợp.
+def main():
+    """Điểm vào của module, chuẩn bị dữ liệu/giao diện rồi điều phối sang luồng nghiệp vụ phù hợp."""
+    load_custom_css()
+    menu = render_sidebar()
+    render_main_header()
+
+    # Mỗi nhánh chuyển lựa chọn menu thành một trang nghiệp vụ cụ thể.
     if menu == "Tổng quan":
         render_dashboard_page()
     elif menu == "Quản lý cơ sở đào tạo":

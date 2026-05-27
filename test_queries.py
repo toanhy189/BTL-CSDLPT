@@ -1,4 +1,4 @@
-"""Test nhanh cac truy van phan tan."""
+"""Module phục vụ nghiệp vụ test truy vấn trong hệ thống đăng ký học phần phân tán."""
 
 import sys
 
@@ -16,8 +16,9 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
 
+# In tiêu đề và DataFrame kết quả khi kiểm thử truy vấn từ terminal.
 def print_result(title, df):
-    """In ket qua voi tieu de de doc."""
+    """In tiêu đề và DataFrame kết quả khi kiểm thử truy vấn từ terminal."""
     print("\n" + "=" * 80)
     print(title)
     print("=" * 80)
@@ -27,7 +28,9 @@ def print_result(title, df):
         print(df.to_string(index=False))
 
 
+# Điểm vào của module, chuẩn bị dữ liệu/giao diện rồi điều phối sang luồng nghiệp vụ phù hợp.
 def main():
+    """Điểm vào của module, chuẩn bị dữ liệu/giao diện rồi điều phối sang luồng nghiệp vụ phù hợp."""
     queries = [
         ("1. Thong ke dang ky theo co so", thong_ke_dang_ky_theo_co_so),
         ("2. Hoc phan dang ky nhieu nhat", hoc_phan_dang_ky_nhieu_nhat),
