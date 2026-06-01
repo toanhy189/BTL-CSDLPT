@@ -17,3 +17,5 @@ Concurrent registration log.
 [2026-05-31 23:13:37] DANG_KY site=HL class=LHP-HL-TEST student=SV-HL-0002 success=True
 [2026-05-31 23:13:37] MO_PHONG_DONG_THOI class=LHP-HL-TEST success=1/5
 [2026-05-31 23:56:10] DANG_KY site=HL class=LHP-HL-030 student=SV-HL-0001 success=True
+[2026-06-01 17:38:36] DANG_KY site=HD class=LHP-HD-019 student=SV-HL-0001 success=True
+[2026-06-01 17:41:20] DANG_KY site=HL class=LHP-HL-TEST student=SV-HL-0001 success=True

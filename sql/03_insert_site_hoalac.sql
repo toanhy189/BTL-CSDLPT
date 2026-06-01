@@ -1,1 +1,0 @@
--- Nạp dữ liệu riêng cho site Hòa Lạc, gồm sinh viên, giảng viên, phòng học, lớp học phần và lịch học.

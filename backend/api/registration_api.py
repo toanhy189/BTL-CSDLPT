@@ -33,7 +33,6 @@ def register(payload: RegisterRequest, current_user=Depends(require_role(["SINH_
 # Xử lý bước nghiệp vụ hủy đăng ký trong module này.
 @router.post("/cancel")
 def cancel(payload: CancelRequest, current_user=Depends(require_role(["SINH_VIEN", "ADMIN"]))):
-    """Xử lý bước nghiệp vụ hủy đăng ký trong module này."""
     student_id = payload.student_id
     if current_user["role"] == "SINH_VIEN":
         student_id = current_user["ref_id"]
@@ -44,7 +43,6 @@ def cancel(payload: CancelRequest, current_user=Depends(require_role(["SINH_VIEN
 # Xử lý bước nghiệp vụ registrations trong module này.
 @router.get("/registrations")
 def registrations(current_user=Depends(require_role(["SINH_VIEN", "ADMIN"])), student_id: str | None = None):
-    """Xử lý bước nghiệp vụ registrations trong module này."""
     lookup_id = student_id or current_user["ref_id"]
     return df_to_records(queries.get_registration_by_student(lookup_id))
 
@@ -52,7 +50,14 @@ def registrations(current_user=Depends(require_role(["SINH_VIEN", "ADMIN"])), st
 # Xử lý bước nghiệp vụ open classes trong module này.
 @router.get("/open-classes")
 def open_classes(site_code: str = Query("HL"), current_user=Depends(require_role(["SINH_VIEN", "ADMIN"]))):
-    """Xử lý bước nghiệp vụ open classes trong module này."""
+    if current_user["role"] == "SINH_VIEN":
+        return df_to_records(
+            queries.get_open_class_sections_for_student(
+                site_code,
+                current_user["ref_id"],
+                current_user["id_headquarter"],
+            )
+        )
     return df_to_records(queries.get_class_sections(site_code))
 
 
@@ -65,6 +70,5 @@ def schedule(
     school_year: int | None = Query(None),
     week_number: int | None = Query(None),
 ):
-    """Xử lý bước nghiệp vụ lịch học trong module này."""
     lookup_id = student_id or current_user["ref_id"]
     return df_to_records(queries.get_student_schedule(lookup_id, semester, school_year, week_number))

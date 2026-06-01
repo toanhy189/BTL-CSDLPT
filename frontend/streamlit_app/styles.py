@@ -55,6 +55,8 @@ def _records(data: Any) -> list[dict[str, Any]]:
     if isinstance(data, pd.DataFrame):
         return data.astype(object).where(pd.notnull(data), None).to_dict(orient="records")
     if isinstance(data, dict):
+        if isinstance(data.get("data"), list):
+            return [row for row in data["data"] if isinstance(row, dict)]
         return [data]
     if isinstance(data, Iterable) and not isinstance(data, (str, bytes)):
         return [row for row in data if isinstance(row, dict)]
@@ -79,7 +81,38 @@ def load_styles() -> None:
             --portal-warn: #fff7ed;
         }
 
-        #MainMenu, footer, header { visibility: hidden; }
+        #MainMenu, footer { visibility: hidden; }
+
+        header {
+            visibility: visible;
+            background: transparent;
+        }
+
+        [data-testid="stDecoration"] {
+            display: none;
+        }
+
+        [data-testid="stToolbar"] {
+            visibility: visible !important;
+        }
+
+        [data-testid="collapsedControl"] {
+            visibility: visible !important;
+            opacity: 1 !important;
+            display: flex !important;
+            position: fixed !important;
+            top: 10px !important;
+            left: 10px !important;
+            z-index: 100000 !important;
+            width: 36px !important;
+            height: 36px !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border: 1px solid var(--portal-border) !important;
+            border-radius: 8px !important;
+            background: #ffffff !important;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, .12) !important;
+        }
 
         .stApp {
             background: #fff;

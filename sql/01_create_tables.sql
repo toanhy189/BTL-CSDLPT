@@ -10,6 +10,8 @@ DROP TABLE IF EXISTS LopHocPhan CASCADE;
 DROP TABLE IF EXISTS SinhVien CASCADE;
 DROP TABLE IF EXISTS GiangVien CASCADE;
 DROP TABLE IF EXISTS PhongHoc CASCADE;
+DROP TABLE IF EXISTS DotDangKy CASCADE;
+DROP TABLE IF EXISTS ChuongTrinhDaoTao CASCADE;
 DROP TABLE IF EXISTS HocPhan CASCADE;
 DROP TABLE IF EXISTS Khoa CASCADE;
 DROP TABLE IF EXISTS CoSo CASCADE;
@@ -44,7 +46,38 @@ CREATE TABLE HocPhan (
         FOREIGN KEY (ID_department) REFERENCES Khoa(ID)
 );
 
--- 4. BẢNG PHÒNG HỌC
+-- 4. BẢNG CHƯƠNG TRÌNH ĐÀO TẠO
+CREATE TABLE ChuongTrinhDaoTao (
+    ID_department varchar(255) NOT NULL,
+    ID_subject varchar(255) NOT NULL,
+    suggested_semester int,
+    is_required boolean DEFAULT true,
+    CONSTRAINT PK_ChuongTrinhDaoTao PRIMARY KEY (ID_department, ID_subject),
+    CONSTRAINT FK_CTDT_Khoa
+        FOREIGN KEY (ID_department) REFERENCES Khoa(ID),
+    CONSTRAINT FK_CTDT_HocPhan
+        FOREIGN KEY (ID_subject) REFERENCES HocPhan(ID)
+);
+
+-- 5. BẢNG ĐỢT ĐĂNG KÝ
+CREATE TABLE DotDangKy (
+    ID varchar(255) NOT NULL,
+    semester int NOT NULL,
+    school_year int NOT NULL,
+    ID_department varchar(255) NOT NULL,
+    admission_year int,
+    start_time timestamp NOT NULL,
+    end_time timestamp NOT NULL,
+    is_open boolean DEFAULT true,
+    description varchar(255),
+    CONSTRAINT PK_DotDangKy PRIMARY KEY (ID),
+    CONSTRAINT FK_DotDangKy_Khoa
+        FOREIGN KEY (ID_department) REFERENCES Khoa(ID),
+    CONSTRAINT CK_DotDangKy_Time
+        CHECK (end_time > start_time)
+);
+
+-- 6. BẢNG PHÒNG HỌC
 CREATE TABLE PhongHoc (
     ID varchar(255) NOT NULL,
     name_room varchar(255) NOT NULL,
@@ -55,7 +88,7 @@ CREATE TABLE PhongHoc (
         FOREIGN KEY (ID_headquarter) REFERENCES CoSo(ID)
 );
 
--- 5. BẢNG GIẢNG VIÊN
+-- 7. BẢNG GIẢNG VIÊN
 CREATE TABLE GiangVien (
     ID varchar(255) NOT NULL,
     name_teacher varchar(255) NOT NULL,
@@ -71,7 +104,7 @@ CREATE TABLE GiangVien (
         FOREIGN KEY (ID_headquarter) REFERENCES CoSo(ID)
 );
 
--- 6. BẢNG SINH VIÊN
+-- 8. BẢNG SINH VIÊN
 CREATE TABLE SinhVien (
     ID varchar(255) NOT NULL,
     name_student varchar(255) NOT NULL,
@@ -89,7 +122,7 @@ CREATE TABLE SinhVien (
         FOREIGN KEY (ID_headquarter) REFERENCES CoSo(ID)
 );
 
--- 7. BẢNG LỚP HỌC PHẦN
+-- 9. BẢNG LỚP HỌC PHẦN
 CREATE TABLE LopHocPhan (
     ID varchar(255) NOT NULL,
     semester int,
@@ -110,7 +143,7 @@ CREATE TABLE LopHocPhan (
         CHECK (number_of_student >= 0 AND number_of_student <= max_student)
 );
 
--- 8. BẢNG LỊCH HỌC
+-- 10. BẢNG LỊCH HỌC
 CREATE TABLE LichHoc (
     ID varchar(255) NOT NULL,
     ID_class varchar(255) NOT NULL,
@@ -135,11 +168,12 @@ CREATE TABLE LichHoc (
         CHECK (end_time > start_time)
 );
 
--- 9. BẢNG ĐĂNG KÝ
+-- 11. BẢNG ĐĂNG KÝ
 CREATE TABLE DangKy (
     ID_student varchar(255) NOT NULL,
     ID_student_headquarter varchar(255) NOT NULL,
     ID_class varchar(255) NOT NULL,
+    ID_registration_period varchar(255) NOT NULL,
     registration_date timestamp DEFAULT CURRENT_TIMESTAMP,
     status varchar(50) DEFAULT 'DA_DANG_KY',
     CONSTRAINT PK_DangKy PRIMARY KEY (ID_student, ID_class),
@@ -147,6 +181,8 @@ CREATE TABLE DangKy (
         FOREIGN KEY (ID_student_headquarter) REFERENCES CoSo(ID),
     CONSTRAINT FK_DangKy_LopHocPhan 
         FOREIGN KEY (ID_class) REFERENCES LopHocPhan(ID),
+    CONSTRAINT FK_DangKy_DotDangKy
+        FOREIGN KEY (ID_registration_period) REFERENCES DotDangKy(ID),
     CONSTRAINT CK_DangKy_Status
         CHECK (status IN ('DA_DANG_KY', 'DA_HUY'))
 );

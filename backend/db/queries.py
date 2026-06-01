@@ -11,7 +11,6 @@ from backend.db.connections import get_connection
 
 # Chuyển DataFrame sang list dict an toàn JSON trước khi trả qua API.
 def df_to_records(df):
-    """Chuyển DataFrame sang list dict an toàn JSON trước khi trả qua API."""
     if df is None or df.empty:
         return []
     safe_df = df.astype(object).where(pd.notnull(df), None)
@@ -19,9 +18,14 @@ def df_to_records(df):
     return json.loads(json.dumps(records, default=str))
 
 
+def _to_python_int(value):
+    if pd.isna(value):
+        return None
+    return int(value)
+
+
 # Đọc dữ liệu từ một site bằng pandas và trả DataFrame rỗng nếu truy vấn lỗi.
 def read_sql(site_code, query, params=None):
-    """Đọc dữ liệu từ một site bằng pandas và trả DataFrame rỗng nếu truy vấn lỗi."""
     conn = None
     try:
         conn = get_connection(site_code)
@@ -42,7 +46,6 @@ def read_sql(site_code, query, params=None):
 
 # Thực thi câu lệnh ghi dữ liệu trên một site với commit/rollback rõ ràng.
 def write_sql(site_code, query, params=None):
-    """Thực thi câu lệnh ghi dữ liệu trên một site với commit/rollback rõ ràng."""
     conn = None
     try:
         conn = get_connection(site_code)
@@ -77,25 +80,21 @@ def write_all_sites(query, params=None):
 
 # Lấy dữ liệu khoa từ nguồn phù hợp để trả về cho tầng gọi phía trên.
 def get_departments(site_code):
-    """Lấy dữ liệu khoa từ nguồn phù hợp để trả về cho tầng gọi phía trên."""
     return read_sql(site_code, "SELECT * FROM khoa ORDER BY id;")
 
 
 # Lấy dữ liệu cơ sở đào tạo từ nguồn phù hợp để trả về cho tầng gọi phía trên.
 def get_headquarters(site_code):
-    """Lấy dữ liệu cơ sở đào tạo từ nguồn phù hợp để trả về cho tầng gọi phía trên."""
     return read_sql(site_code, "SELECT * FROM coso ORDER BY id;")
 
 
 # Lấy dữ liệu sinh viên từ nguồn phù hợp để trả về cho tầng gọi phía trên.
 def get_students(site_code):
-    """Lấy dữ liệu sinh viên từ nguồn phù hợp để trả về cho tầng gọi phía trên."""
     return read_sql(site_code, "SELECT * FROM sinhvien ORDER BY id;")
 
 
 # Thêm mới dữ liệu sinh viên sau khi nhận thông tin từ form hoặc API.
 def add_student(site_code, data):
-    """Thêm mới dữ liệu sinh viên sau khi nhận thông tin từ form hoặc API."""
     return write_sql(
         site_code,
         """
@@ -154,13 +153,11 @@ def delete_student(site_code, student_id):
 
 # Lấy dữ liệu giảng viên từ nguồn phù hợp để trả về cho tầng gọi phía trên.
 def get_teachers(site_code):
-    """Lấy dữ liệu giảng viên từ nguồn phù hợp để trả về cho tầng gọi phía trên."""
     return read_sql(site_code, "SELECT * FROM giangvien ORDER BY id;")
 
 
 # Thêm mới dữ liệu giảng viên sau khi nhận thông tin từ form hoặc API.
 def add_teacher(site_code, data):
-    """Thêm mới dữ liệu giảng viên sau khi nhận thông tin từ form hoặc API."""
     return write_sql(
         site_code,
         """
@@ -213,13 +210,11 @@ def delete_teacher(site_code, teacher_id):
 
 # Lấy dữ liệu học phần từ nguồn phù hợp để trả về cho tầng gọi phía trên.
 def get_courses(site_code="HL"):
-    """Lấy dữ liệu học phần từ nguồn phù hợp để trả về cho tầng gọi phía trên."""
     return read_sql(site_code, "SELECT * FROM hocphan ORDER BY id;")
 
 
 # Thêm mới dữ liệu học phần to all các site sau khi nhận thông tin từ form hoặc API.
 def add_course_to_all_sites(data):
-    """Thêm mới dữ liệu học phần to all các site sau khi nhận thông tin từ form hoặc API."""
     return write_all_sites(
         "INSERT INTO hocphan (id, name_subject, number_of_credit, id_department) VALUES (%s, %s, %s, %s);",
         (data["id"], data["name_subject"], data["number_of_credit"], data["id_department"]),
@@ -243,15 +238,145 @@ def delete_course_all_sites(course_id):
     return write_all_sites("DELETE FROM hocphan WHERE id = %s;", (course_id,))
 
 
+def get_training_programs(site_code="HL"):
+    return read_sql(
+        site_code,
+        """
+        SELECT
+            ctdt.id_department,
+            k.name_department,
+            ctdt.id_subject,
+            hp.name_subject,
+            ctdt.suggested_semester,
+            ctdt.is_required
+        FROM chuongtrinhdaotao ctdt
+        JOIN khoa k ON k.id = ctdt.id_department
+        JOIN hocphan hp ON hp.id = ctdt.id_subject
+        ORDER BY ctdt.id_department, ctdt.suggested_semester NULLS LAST, ctdt.id_subject;
+        """,
+    )
+
+
+def add_training_program_to_all_sites(data):
+    return write_all_sites(
+        """
+        INSERT INTO chuongtrinhdaotao (id_department, id_subject, suggested_semester, is_required)
+        VALUES (%s, %s, %s, %s);
+        """,
+        (data["id_department"], data["id_subject"], data.get("suggested_semester"), data.get("is_required", True)),
+    )
+
+
+def update_training_program_all_sites(department_id, subject_id, data):
+    return write_all_sites(
+        """
+        UPDATE chuongtrinhdaotao
+        SET suggested_semester = %s,
+            is_required = %s
+        WHERE id_department = %s AND id_subject = %s;
+        """,
+        (data.get("suggested_semester"), data.get("is_required", True), department_id, subject_id),
+    )
+
+
+def delete_training_program_all_sites(department_id, subject_id):
+    return write_all_sites(
+        "DELETE FROM chuongtrinhdaotao WHERE id_department = %s AND id_subject = %s;",
+        (department_id, subject_id),
+    )
+
+
+def get_registration_periods(site_code="HL"):
+    return read_sql(
+        site_code,
+        """
+        SELECT
+            ddk.id,
+            ddk.semester,
+            ddk.school_year,
+            ddk.id_department,
+            k.name_department,
+            ddk.admission_year,
+            ddk.start_time,
+            ddk.end_time,
+            ddk.is_open,
+            ddk.description
+        FROM dotdangky ddk
+        JOIN khoa k ON k.id = ddk.id_department
+        ORDER BY ddk.school_year DESC, ddk.semester DESC, ddk.id_department, ddk.admission_year;
+        """,
+    )
+
+
+def add_registration_period_to_all_sites(data):
+    return write_all_sites(
+        """
+        INSERT INTO dotdangky (
+            id, semester, school_year, id_department, admission_year,
+            start_time, end_time, is_open, description
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
+        """,
+        (
+            data["id"],
+            data["semester"],
+            data["school_year"],
+            data["id_department"],
+            data.get("admission_year"),
+            data["start_time"],
+            data["end_time"],
+            data.get("is_open", True),
+            data.get("description"),
+        ),
+    )
+
+
+def update_registration_period_all_sites(period_id, data):
+    return write_all_sites(
+        """
+        UPDATE dotdangky
+        SET semester = %s,
+            school_year = %s,
+            id_department = %s,
+            admission_year = %s,
+            start_time = %s,
+            end_time = %s,
+            is_open = %s,
+            description = %s
+        WHERE id = %s;
+        """,
+        (
+            data["semester"],
+            data["school_year"],
+            data["id_department"],
+            data.get("admission_year"),
+            data["start_time"],
+            data["end_time"],
+            data.get("is_open", True),
+            data.get("description"),
+            period_id,
+        ),
+    )
+
+
+def update_registration_period_status_all_sites(period_id, is_open):
+    return write_all_sites(
+        "UPDATE dotdangky SET is_open = %s WHERE id = %s;",
+        (bool(is_open), period_id),
+    )
+
+
+def delete_registration_period_all_sites(period_id):
+    return write_all_sites("DELETE FROM dotdangky WHERE id = %s;", (period_id,))
+
+
 # Lấy dữ liệu phòng học từ nguồn phù hợp để trả về cho tầng gọi phía trên.
 def get_rooms(site_code):
-    """Lấy dữ liệu phòng học từ nguồn phù hợp để trả về cho tầng gọi phía trên."""
     return read_sql(site_code, "SELECT * FROM phonghoc ORDER BY id;")
 
 
 # Thêm mới dữ liệu phòng học sau khi nhận thông tin từ form hoặc API.
 def add_room(site_code, data):
-    """Thêm mới dữ liệu phòng học sau khi nhận thông tin từ form hoặc API."""
     return write_sql(
         site_code,
         "INSERT INTO phonghoc (id, name_room, capacity, id_headquarter) VALUES (%s, %s, %s, %s);",
@@ -279,7 +404,6 @@ def delete_room(site_code, room_id):
 
 # Lấy dữ liệu lớp học phần từ nguồn phù hợp để trả về cho tầng gọi phía trên.
 def get_class_sections(site_code):
-    """Lấy dữ liệu lớp học phần từ nguồn phù hợp để trả về cho tầng gọi phía trên."""
     return read_sql(
         site_code,
         """
@@ -340,9 +464,132 @@ def get_class_sections(site_code):
     )
 
 
+def get_open_class_sections_for_student(site_code, student_id, student_headquarter):
+    """Lay lop hoc phan duoc phep dang ky theo dot dang ky va CTDT cua sinh vien."""
+    student_df = read_sql(
+        student_headquarter,
+        """
+        SELECT id_department, year_of_admission
+        FROM sinhvien
+        WHERE id = %s;
+        """,
+        (student_id,),
+    )
+    if student_df.empty:
+        return pd.DataFrame()
+    student_department = student_df.iloc[0]["id_department"]
+    admission_year = _to_python_int(student_df.iloc[0]["year_of_admission"])
+
+    return read_sql(
+        site_code,
+        """
+        WITH active_period AS (
+            SELECT id, semester, school_year, id_department, admission_year, start_time, end_time, description
+            FROM dotdangky
+            WHERE id_department = %s
+              AND (admission_year IS NULL OR admission_year = %s)
+              AND is_open = true
+              AND CURRENT_TIMESTAMP BETWEEN start_time AND end_time
+            ORDER BY admission_year NULLS LAST, start_time DESC
+            LIMIT 1
+        ),
+        schedule_sessions AS (
+            SELECT
+                id_class,
+                day_of_week,
+                start_period,
+                end_period,
+                start_time,
+                end_time,
+                id_room,
+                MIN(study_date) AS first_study_date
+            FROM lichhoc
+            GROUP BY
+                id_class, day_of_week, start_period, end_period,
+                start_time, end_time, id_room
+        )
+        SELECT
+            l.id,
+            l.semester,
+            l.school_year,
+            l.number_of_student,
+            l.max_student,
+            l.id_subject,
+            hp.name_subject,
+            hp.id_department AS subject_department,
+            l.id_teacher,
+            gv.name_teacher,
+            l.id_headquarter,
+            ap.id AS registration_period_id,
+            ap.description AS registration_period_description,
+            ap.start_time AS registration_start_time,
+            ap.end_time AS registration_end_time,
+            ctdt.suggested_semester,
+            ctdt.is_required,
+            STRING_AGG(DISTINCT ss.id_room, ', ' ORDER BY ss.id_room) AS id_rooms,
+            STRING_AGG(
+                DISTINCT
+                CASE ss.day_of_week
+                    WHEN 2 THEN 'T2'
+                    WHEN 3 THEN 'T3'
+                    WHEN 4 THEN 'T4'
+                    WHEN 5 THEN 'T5'
+                    WHEN 6 THEN 'T6'
+                    WHEN 7 THEN 'T7'
+                    WHEN 8 THEN 'CN'
+                END
+                || ' ' || TO_CHAR(ss.first_study_date, 'DD/MM')
+                || ', tiet ' || ss.start_period || '-' || ss.end_period
+                || ', ' || TO_CHAR(ss.start_time, 'HH24:MI') || '-' || TO_CHAR(ss.end_time, 'HH24:MI')
+                || ', ' || ss.id_room,
+                E'\n'
+            ) AS schedule_summary
+        FROM active_period ap
+        JOIN lophocphan l
+          ON l.semester = ap.semester
+         AND l.school_year = ap.school_year
+        JOIN hocphan hp ON hp.id = l.id_subject
+        JOIN chuongtrinhdaotao ctdt
+          ON ctdt.id_department = ap.id_department
+         AND ctdt.id_subject = hp.id
+        JOIN giangvien gv ON gv.id = l.id_teacher
+        LEFT JOIN schedule_sessions ss ON ss.id_class = l.id
+        GROUP BY
+            l.id, l.semester, l.school_year, l.number_of_student, l.max_student,
+            l.id_subject, hp.name_subject, hp.id_department, l.id_teacher,
+            gv.name_teacher, l.id_headquarter, ap.id, ap.description, ap.start_time,
+            ap.end_time, ctdt.suggested_semester, ctdt.is_required
+        ORDER BY ctdt.suggested_semester NULLS LAST, l.id;
+        """,
+        (student_department, admission_year),
+    )
+
+
+def get_active_registration_period_for_student(site_code, student_department, admission_year, semester, school_year):
+    """Tim dot dang ky hop le tren site dang xu ly dang ky."""
+    admission_year = _to_python_int(admission_year)
+    semester = _to_python_int(semester)
+    school_year = _to_python_int(school_year)
+    return read_sql(
+        site_code,
+        """
+        SELECT id, semester, school_year, id_department, admission_year, start_time, end_time, description
+        FROM dotdangky
+        WHERE id_department = %s
+          AND (admission_year IS NULL OR admission_year = %s)
+          AND semester = %s
+          AND school_year = %s
+          AND is_open = true
+          AND CURRENT_TIMESTAMP BETWEEN start_time AND end_time
+        ORDER BY admission_year NULLS LAST, start_time DESC
+        LIMIT 1;
+        """,
+        (student_department, admission_year, semester, school_year),
+    )
+
+
 # Thêm mới dữ liệu lớp học phần sau khi nhận thông tin từ form hoặc API.
 def add_class_section(site_code, data):
-    """Thêm mới dữ liệu lớp học phần sau khi nhận thông tin từ form hoặc API."""
     return write_sql(
         site_code,
         """
@@ -396,7 +643,6 @@ def delete_class_section(site_code, class_id):
 
 # Lấy dữ liệu lịch học từ nguồn phù hợp để trả về cho tầng gọi phía trên.
 def get_schedules(site_code):
-    """Lấy dữ liệu lịch học từ nguồn phù hợp để trả về cho tầng gọi phía trên."""
     return read_sql(
         site_code,
         """
@@ -424,7 +670,6 @@ def get_schedules(site_code):
 
 # Thêm mới dữ liệu lịch học sau khi nhận thông tin từ form hoặc API.
 def add_schedule(site_code, data):
-    """Thêm mới dữ liệu lịch học sau khi nhận thông tin từ form hoặc API."""
     return write_sql(
         site_code,
         """
@@ -486,7 +731,6 @@ def delete_schedule(site_code, schedule_id):
 
 # Lấy dữ liệu registration by sinh viên từ nguồn phù hợp để trả về cho tầng gọi phía trên.
 def get_registration_by_student(student_id):
-    """Lấy dữ liệu registration by sinh viên từ nguồn phù hợp để trả về cho tầng gọi phía trên."""
     frames = []
     query = """
         SELECT
@@ -496,11 +740,16 @@ def get_registration_by_student(student_id):
             hp.id AS id_subject,
             hp.name_subject,
             l.id_headquarter AS class_headquarter,
+            d.id_registration_period,
+            ddk.description AS registration_period_description,
+            ddk.semester AS registration_semester,
+            ddk.school_year AS registration_school_year,
             d.registration_date,
             d.status
         FROM dangky d
         JOIN lophocphan l ON l.id = d.id_class
         JOIN hocphan hp ON hp.id = l.id_subject
+        JOIN dotdangky ddk ON ddk.id = d.id_registration_period
         WHERE d.id_student = %s
         ORDER BY d.registration_date DESC;
     """
@@ -517,7 +766,6 @@ def get_registration_by_student(student_id):
 
 # Lấy dữ liệu registration by class từ nguồn phù hợp để trả về cho tầng gọi phía trên.
 def get_registration_by_class(site_code, class_id):
-    """Lấy dữ liệu registration by class từ nguồn phù hợp để trả về cho tầng gọi phía trên."""
     return read_sql(
         site_code,
         """
@@ -527,11 +775,14 @@ def get_registration_by_class(site_code, class_id):
             d.id_class,
             d.registration_date,
             d.status,
+            d.id_registration_period,
+            ddk.description AS registration_period_description,
             l.id_headquarter AS class_headquarter,
             hp.name_subject
         FROM dangky d
         JOIN lophocphan l ON l.id = d.id_class
         JOIN hocphan hp ON hp.id = l.id_subject
+        JOIN dotdangky ddk ON ddk.id = d.id_registration_period
         WHERE d.id_class = %s
         ORDER BY d.registration_date DESC;
         """,
@@ -541,7 +792,6 @@ def get_registration_by_class(site_code, class_id):
 
 # Lấy dữ liệu thời khóa biểu sinh viên từ nguồn phù hợp để trả về cho tầng gọi phía trên.
 def get_student_schedule(student_id, semester=None, school_year=None, week_number=None):
-    """Lấy dữ liệu thời khóa biểu sinh viên từ nguồn phù hợp để trả về cho tầng gọi phía trên."""
     frames = []
     query = """
         SELECT
@@ -581,7 +831,6 @@ def get_student_schedule(student_id, semester=None, school_year=None, week_numbe
 
 # Lấy dữ liệu lớp giảng viên phụ trách từ nguồn phù hợp để trả về cho tầng gọi phía trên.
 def get_teacher_classes(teacher_id, site_code):
-    """Lấy dữ liệu lớp giảng viên phụ trách từ nguồn phù hợp để trả về cho tầng gọi phía trên."""
     return read_sql(
         site_code,
         """
@@ -604,7 +853,6 @@ def get_teacher_classes(teacher_id, site_code):
 
 # Lấy dữ liệu lịch dạy giảng viên từ nguồn phù hợp để trả về cho tầng gọi phía trên.
 def get_teacher_schedule(teacher_id, site_code, semester=None, school_year=None, week_number=None):
-    """Lấy dữ liệu lịch dạy giảng viên từ nguồn phù hợp để trả về cho tầng gọi phía trên."""
     return read_sql(
         site_code,
         """

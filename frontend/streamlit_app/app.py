@@ -20,7 +20,11 @@ from ui_pages.teacher.teacher_schedule_page import render_teacher_schedule
 from ui_pages.teacher.teacher_students_page import render_teacher_students
 
 
-st.set_page_config(page_title="Hệ thống đăng ký học phần nhiều cơ sở", layout="wide")
+st.set_page_config(
+    page_title="Hệ thống đăng ký học phần nhiều cơ sở",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
 
 
 ADMIN_MENU = [

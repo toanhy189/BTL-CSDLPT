@@ -7,3 +7,6 @@ venv/
 extract_pdf.py
 pdf_content.txt
 streamlit*.log
+logs/*.log
+logs/*.txt
+!logs/.gitkeep

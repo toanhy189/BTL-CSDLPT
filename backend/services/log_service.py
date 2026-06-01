@@ -9,7 +9,6 @@ LOG_FILE = Path("logs") / "concurrent_registration_log.txt"
 
 # Xử lý bước nghiệp vụ nhật ký trong module này.
 def write_log(message):
-    """Xử lý bước nghiệp vụ nhật ký trong module này."""
     LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with LOG_FILE.open("a", encoding="utf-8") as file:
@@ -18,7 +17,6 @@ def write_log(message):
 
 # Lấy dữ liệu nhật ký từ nguồn phù hợp để trả về cho tầng gọi phía trên.
 def read_logs(limit=None):
-    """Lấy dữ liệu nhật ký từ nguồn phù hợp để trả về cho tầng gọi phía trên."""
     if not LOG_FILE.exists():
         return ""
     lines = LOG_FILE.read_text(encoding="utf-8").splitlines()

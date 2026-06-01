@@ -22,7 +22,6 @@ CREATE TABLE IF NOT EXISTS taikhoan (
 
 # Tạo bảng tài khoản nếu thiếu và seed tài khoản demo ban đầu.
 def ensure_auth_schema():
-    """Tạo bảng tài khoản nếu thiếu và seed tài khoản demo ban đầu."""
     for site_code in SITE_CODES:
         conn = None
         try:
@@ -43,7 +42,6 @@ def ensure_auth_schema():
 
 # Thêm tài khoản vào site nếu username chưa tồn tại, mật khẩu luôn được băm trước khi lưu.
 def _insert_account(site_code, username, password, role, ref_id=None, id_headquarter=None):
-    """Thêm tài khoản vào site nếu username chưa tồn tại, mật khẩu luôn được băm trước khi lưu."""
     conn = get_connection(site_code)
     try:
         with conn.cursor() as cursor:
@@ -74,7 +72,6 @@ def _fetch_all_ids(site_code, table_name, id_col="id"):
 
 # Tạo tài khoản demo cho admin, sinh viên và giảng viên dựa trên dữ liệu đang có ở mỗi site.
 def _ensure_demo_accounts():
-    """Tạo tài khoản demo cho admin, sinh viên và giảng viên dựa trên dữ liệu đang có ở mỗi site."""
     try:
         _insert_account("HL", "admin", "admin123", "ADMIN", "admin", "HL")
     except Exception as exc:
@@ -106,7 +103,6 @@ def _ensure_demo_accounts():
 
 # Quét các site để tìm tài khoản theo username vì tài khoản có thể nằm ở site quản lý người dùng.
 def find_account(username):
-    """Quét các site để tìm tài khoản theo username vì tài khoản có thể nằm ở site quản lý người dùng."""
     for site_code in SITE_CODES:
         conn = None
         try:
@@ -140,7 +136,6 @@ def find_account(username):
 
 # Kiểm tra username/password, tạo token và trả thông tin người dùng cho frontend.
 def login_user(username, password):
-    """Kiểm tra username/password, tạo token và trả thông tin người dùng cho frontend."""
     account = find_account(username)
     if not account or not verify_password(password, account["password_hash"]):
         raise HTTPException(

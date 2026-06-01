@@ -35,14 +35,12 @@ app.add_middleware(
 # Chạy khi backend khởi động để bảo đảm bảng/tài khoản xác thực đã sẵn sàng.
 @app.on_event("startup")
 def on_startup():
-    """Chạy khi backend khởi động để bảo đảm bảng/tài khoản xác thực đã sẵn sàng."""
     ensure_auth_schema()
 
 
 # Endpoint kiểm tra nhanh backend còn phản hồi.
 @app.get("/health")
 def health():
-    """Endpoint kiểm tra nhanh backend còn phản hồi."""
     return {"status": "ok"}
 
 

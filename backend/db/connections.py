@@ -7,14 +7,12 @@ from backend.core.config import DB_CONFIGS
 
 # Mở kết nối PostgreSQL đến đúng site/cơ sở theo mã được truyền vào.
 def get_connection(site_code):
-    """Mở kết nối PostgreSQL đến đúng site/cơ sở theo mã được truyền vào."""
     config = DB_CONFIGS[site_code]
     return psycopg2.connect(**config)
 
 
 # Thử kết nối một site và trả trạng thái để dashboard biết site online hay lỗi.
 def check_site_connection(site_code):
-    """Thử kết nối một site và trả trạng thái để dashboard biết site online hay lỗi."""
     try:
         conn = get_connection(site_code)
         conn.close()
