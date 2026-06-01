@@ -1,47 +1,50 @@
-"""Trang Streamlit cho nghiệp vụ trang quản lý dữ liệu của quản trị viên, hiển thị dữ liệu và gửi thao tác của người dùng."""
+"""Admin data management page."""
 
 import streamlit as st
 
-from api_client import api_get, api_post
-from styles import SITE_LABELS, html_table, metric_card, page_title, records_count, section_title
+from api_client import api_delete, api_get, api_post, api_put
+from styles import SITE_LABELS, dataframe, metric_card, page_title, records_count, section_title
 
 
 SITE_CODES = ["HL", "NT", "HD", "CG", "HCM"]
 
 
-# Hàm hỗ trợ chuẩn hóa/lọc/chuẩn bị dữ liệu site select trước khi hiển thị hoặc xử lý.
 def _site_select(label, key):
-    """Hàm hỗ trợ chuẩn hóa/lọc/chuẩn bị dữ liệu site select trước khi hiển thị hoặc xử lý."""
     return st.selectbox(label, SITE_CODES, key=key, format_func=lambda code: SITE_LABELS.get(code, code))
 
 
-# Xử lý bước nghiệp vụ result trong module này.
 def _result(res):
-    """Xử lý bước nghiệp vụ result trong module này."""
     if res.get("_error") or res.get("success") is False:
         st.error(res.get("message", "Thao tác thất bại"))
     else:
         st.success(res.get("message", "Thao tác thành công"))
+        st.rerun()
 
 
-# Hàm hỗ trợ chuẩn hóa/lọc/chuẩn bị dữ liệu toolbar trước khi hiển thị hoặc xử lý.
-def _toolbar(label, key):
-    """Hàm hỗ trợ chuẩn hóa/lọc/chuẩn bị dữ liệu toolbar trước khi hiển thị hoặc xử lý."""
-    c1, c2, c3, c4 = st.columns([0.16, 0.12, 0.12, 0.14])
-    with c1:
-        st.button(f"Thêm {label}", use_container_width=True, key=f"{key}_add")
-    with c2:
-        st.button("Sửa", use_container_width=True, key=f"{key}_edit")
-    with c3:
-        st.button("Xóa", use_container_width=True, key=f"{key}_delete")
-    with c4:
-        st.button("Xuất Excel", use_container_width=True, key=f"{key}_export")
+def _rows(data):
+    return data if isinstance(data, list) else []
 
 
-# Vẽ màn hình/khối giao diện admin quản lý dữ liệu và gọi API hoặc service khi người dùng thao tác.
+def _distinct_count(rows, field):
+    return len({row.get(field) for row in _rows(rows) if row.get(field)})
+
+
+def _select_record(rows, label, key):
+    rows = _rows(rows)
+    if not rows:
+        st.info("Chưa có dữ liệu để sửa hoặc xóa.")
+        return None
+    return st.selectbox(label, rows, key=key, format_func=lambda row: str(row.get("id")))
+
+
+def _delete_button(label, path, token, params=None, key=None):
+    confirm = st.checkbox(f"Xác nhận {label.lower()}", key=f"confirm_{key or path}")
+    if st.button(label, disabled=not confirm, key=key, use_container_width=True):
+        _result(api_delete(path, token=token, params=params))
+
+
 def render_admin_management(token):
-    """Vẽ màn hình/khối giao diện admin quản lý dữ liệu và gọi API hoặc service khi người dùng thao tác."""
-    page_title("Quản lý dữ liệu", "Quản trị dữ liệu cục bộ và dữ liệu dùng chung.")
+    page_title("Quản lý dữ liệu", "Quản trị dữ liệu cục bộ theo cơ sở và dữ liệu dùng chung toàn trường.")
     tabs = st.tabs(["Sinh viên", "Giảng viên", "Học phần", "Lớp học phần", "Phòng học", "Lịch học"])
 
     with tabs[0]:
@@ -49,288 +52,287 @@ def render_admin_management(token):
         students = api_get("/admin/students", token=token, params={"site_code": site})
         cols = st.columns(3)
         with cols[0]:
-            metric_card(f"Tổng sinh viên ({SITE_LABELS.get(site, site)})", records_count(students), icon="◌", accent="red", red_value=True)
+            metric_card(f"Tổng sinh viên ({SITE_LABELS.get(site, site)})", records_count(students), red_value=True)
         with cols[1]:
-            metric_card("Số khoa", "-", icon="▥", accent="blue")
+            metric_card("Số khoa", _distinct_count(students, "id_department"))
         with cols[2]:
-            metric_card("Số lớp hành chính", "-", icon="▤", accent="green")
-        _toolbar("sinh viên", "student_toolbar")
+            metric_card("Số lớp hành chính", _distinct_count(students, "formal_class"))
         section_title("Danh sách sinh viên")
-        html_table(
-            students,
-            [
-                ("id", "Mã SV"),
-                ("name_student", "Họ tên"),
-                ("date_of_birth", "Ngày sinh"),
-                ("formal_class", "Lớp"),
-                ("id_department", "Khoa"),
-                ("id_headquarter", "Cơ sở"),
-                ("phone_student", "SĐT"),
-            ],
-            limit=10,
-        )
-        with st.expander("Thêm sinh viên", expanded=False):
-            with st.form("add_student"):
-                c1, c2, c3 = st.columns(3)
-                with c1:
-                    sid = st.text_input("Mã sinh viên")
-                    name = st.text_input("Họ tên")
-                    dob = st.text_input("Ngày sinh", placeholder="YYYY-MM-DD")
-                with c2:
-                    address = st.text_input("Địa chỉ")
-                    formal_class = st.text_input("Lớp")
-                    year = st.number_input("Năm nhập học", 2000, 2100, 2024)
-                with c3:
-                    phone = st.text_input("SĐT")
-                    dept = st.text_input("Khoa", value="CNTT")
-                    hq = st.text_input("Cơ sở", value=site)
-                if st.form_submit_button("Lưu"):
-                    _result(
-                        api_post(
-                            "/admin/students",
-                            token=token,
-                            json={
-                                "site_code": site,
-                                "id": sid,
-                                "name_student": name,
-                                "date_of_birth": dob,
-                                "address_student": address,
-                                "formal_class": formal_class,
-                                "year_of_admission": int(year),
-                                "phone_student": phone,
-                                "id_department": dept,
-                                "id_headquarter": hq,
-                            },
-                        )
-                    )
+        dataframe(students, height=520)
+
+        create_tab, update_tab, delete_tab = st.tabs(["Thêm", "Sửa", "Xóa"])
+        with create_tab:
+            _student_form(token, site, mode="create")
+        with update_tab:
+            selected = _select_record(students, "Chọn sinh viên", "edit_student")
+            if selected:
+                _student_form(token, site, mode="update", current=selected)
+        with delete_tab:
+            selected = _select_record(students, "Chọn sinh viên", "delete_student")
+            if selected:
+                _delete_button("Xóa sinh viên", f"/admin/students/{selected.get('id')}", token, {"site_code": site}, "delete_student_btn")
 
     with tabs[1]:
         site = _site_select("Cơ sở đào tạo", "admin_teacher_site")
         teachers = api_get("/admin/teachers", token=token, params={"site_code": site})
-        metric_card(f"Tổng giảng viên ({SITE_LABELS.get(site, site)})", records_count(teachers), icon="◌", accent="red", red_value=True)
-        _toolbar("giảng viên", "teacher_toolbar")
+        cols = st.columns(2)
+        with cols[0]:
+            metric_card(f"Tổng giảng viên ({SITE_LABELS.get(site, site)})", records_count(teachers), red_value=True)
+        with cols[1]:
+            metric_card("Số khoa", _distinct_count(teachers, "id_department"))
         section_title("Danh sách giảng viên")
-        html_table(
-            teachers,
-            [
-                ("id", "Mã GV"),
-                ("name_teacher", "Họ tên"),
-                ("degree", "Học vị"),
-                ("id_department", "Khoa"),
-                ("id_headquarter", "Cơ sở"),
-                ("phone_teacher", "SĐT"),
-            ],
-            limit=10,
-        )
-        with st.expander("Thêm giảng viên", expanded=False):
-            with st.form("add_teacher"):
-                c1, c2, c3 = st.columns(3)
-                with c1:
-                    tid = st.text_input("Mã giảng viên")
-                    name = st.text_input("Họ tên")
-                with c2:
-                    address = st.text_input("Địa chỉ")
-                    degree = st.text_input("Học vị")
-                with c3:
-                    phone = st.text_input("SĐT")
-                    dept = st.text_input("Khoa", value="CNTT")
-                    hq = st.text_input("Cơ sở", value=site)
-                if st.form_submit_button("Lưu"):
-                    _result(
-                        api_post(
-                            "/admin/teachers",
-                            token=token,
-                            json={
-                                "site_code": site,
-                                "id": tid,
-                                "name_teacher": name,
-                                "address_teacher": address,
-                                "degree": degree,
-                                "phone_teacher": phone,
-                                "id_department": dept,
-                                "id_headquarter": hq,
-                            },
-                        )
-                    )
+        dataframe(teachers, height=520)
+
+        create_tab, update_tab, delete_tab = st.tabs(["Thêm", "Sửa", "Xóa"])
+        with create_tab:
+            _teacher_form(token, site, mode="create")
+        with update_tab:
+            selected = _select_record(teachers, "Chọn giảng viên", "edit_teacher")
+            if selected:
+                _teacher_form(token, site, mode="update", current=selected)
+        with delete_tab:
+            selected = _select_record(teachers, "Chọn giảng viên", "delete_teacher")
+            if selected:
+                _delete_button("Xóa giảng viên", f"/admin/teachers/{selected.get('id')}", token, {"site_code": site}, "delete_teacher_btn")
 
     with tabs[2]:
         courses = api_get("/admin/courses", token=token)
-        metric_card("Tổng học phần dùng chung", records_count(courses), icon="▤", accent="red", red_value=True)
-        _toolbar("học phần", "course_toolbar")
+        cols = st.columns(2)
+        with cols[0]:
+            metric_card("Tổng học phần dùng chung", records_count(courses), red_value=True)
+        with cols[1]:
+            metric_card("Số khoa phụ trách", _distinct_count(courses, "id_department"))
         section_title("Danh sách học phần")
-        html_table(
-            courses,
-            [
-                ("id", "Mã học phần"),
-                ("name_subject", "Tên học phần"),
-                ("number_of_credit", "Số tín chỉ"),
-                ("id_department", "Khoa"),
-            ],
-            limit=10,
-        )
-        with st.expander("Thêm học phần vào cả 5 site", expanded=False):
-            with st.form("add_course"):
-                c1, c2, c3 = st.columns(3)
-                with c1:
-                    cid = st.text_input("Mã học phần")
-                with c2:
-                    name = st.text_input("Tên học phần")
-                    credits = st.number_input("Số tín chỉ", 1, 10, 3)
-                with c3:
-                    dept = st.text_input("Khoa", value="CNTT")
-                if st.form_submit_button("Lưu"):
-                    _result(
-                        api_post(
-                            "/admin/courses",
-                            token=token,
-                            json={
-                                "id": cid,
-                                "name_subject": name,
-                                "number_of_credit": int(credits),
-                                "id_department": dept,
-                            },
-                        )
-                    )
+        dataframe(courses, height=520)
+
+        create_tab, update_tab, delete_tab = st.tabs(["Thêm", "Sửa", "Xóa"])
+        with create_tab:
+            _course_form(token, mode="create")
+        with update_tab:
+            selected = _select_record(courses, "Chọn học phần", "edit_course")
+            if selected:
+                _course_form(token, mode="update", current=selected)
+        with delete_tab:
+            selected = _select_record(courses, "Chọn học phần", "delete_course")
+            if selected:
+                st.warning("Học phần dùng chung được xóa trên cả 5 site. Nếu đang có lớp học phần tham chiếu, database sẽ từ chối.")
+                _delete_button("Xóa học phần", f"/admin/courses/{selected.get('id')}", token, key="delete_course_btn")
 
     with tabs[3]:
         site = _site_select("Cơ sở mở lớp", "admin_class_site")
         classes = api_get("/admin/class-sections", token=token, params={"site_code": site})
-        metric_card(f"Tổng lớp học phần ({SITE_LABELS.get(site, site)})", records_count(classes), icon="▤", accent="red", red_value=True)
-        _toolbar("lớp học phần", "class_toolbar")
+        metric_card(f"Tổng lớp học phần ({SITE_LABELS.get(site, site)})", records_count(classes), red_value=True)
         section_title("Danh sách lớp học phần")
-        html_table(
-            classes,
-            [
-                ("id", "Mã lớp"),
-                ("name_subject", "Học phần"),
-                ("name_teacher", "Giảng viên"),
-                ("semester", "Học kỳ"),
-                ("school_year", "Năm học"),
-                ("number_of_student", "Sĩ số"),
-                ("max_student", "Tối đa"),
-                ("id_rooms", "Phòng"),
-            ],
-            limit=10,
-        )
-        with st.expander("Thêm lớp học phần", expanded=False):
-            with st.form("add_class"):
-                c1, c2, c3 = st.columns(3)
-                with c1:
-                    class_id = st.text_input("Mã lớp")
-                    semester = st.number_input("Học kỳ", 1, 3, 1)
-                    year = st.number_input("Năm học", 2000, 2100, 2024)
-                with c2:
-                    max_student = st.number_input("Sĩ số tối đa", 1, 300, 50)
-                    shift = st.number_input("Ca học", 1, 10, 1)
-                    hq = st.text_input("Cơ sở", value=site)
-                with c3:
-                    subject = st.text_input("Mã học phần")
-                    teacher = st.text_input("Mã giảng viên")
-                if st.form_submit_button("Lưu"):
-                    _result(
-                        api_post(
-                            "/admin/class-sections",
-                            token=token,
-                            json={
-                                "site_code": site,
-                                "id": class_id,
-                                "semester": int(semester),
-                                "school_year": int(year),
-                                "number_of_student": 0,
-                                "max_student": int(max_student),
-                                "shift": int(shift),
-                                "id_subject": subject,
-                                "id_teacher": teacher,
-                                "id_headquarter": hq,
-                            },
-                        )
-                    )
+        dataframe(classes, height=520)
+
+        create_tab, update_tab, delete_tab = st.tabs(["Thêm", "Sửa", "Xóa"])
+        with create_tab:
+            _class_form(token, site, mode="create")
+        with update_tab:
+            selected = _select_record(classes, "Chọn lớp học phần", "edit_class")
+            if selected:
+                _class_form(token, site, mode="update", current=selected)
+        with delete_tab:
+            selected = _select_record(classes, "Chọn lớp học phần", "delete_class")
+            if selected:
+                st.warning("Chỉ xóa lớp khi chưa có đăng ký hoặc lịch học liên quan.")
+                _delete_button("Xóa lớp học phần", f"/admin/class-sections/{selected.get('id')}", token, {"site_code": site}, "delete_class_btn")
 
     with tabs[4]:
         site = _site_select("Cơ sở", "admin_room_site")
         rooms = api_get("/admin/rooms", token=token, params={"site_code": site})
-        metric_card(f"Tổng phòng học ({SITE_LABELS.get(site, site)})", records_count(rooms), icon="▥", accent="red", red_value=True)
-        _toolbar("phòng học", "room_toolbar")
+        metric_card(f"Tổng phòng học ({SITE_LABELS.get(site, site)})", records_count(rooms), red_value=True)
         section_title("Danh sách phòng học")
-        html_table(
-            rooms,
-            [
-                ("id", "Mã phòng"),
-                ("name_room", "Tên phòng"),
-                ("capacity", "Sức chứa"),
-                ("id_headquarter", "Cơ sở"),
-            ],
-            limit=10,
-        )
-        with st.expander("Thêm phòng học", expanded=False):
-            with st.form("add_room"):
-                c1, c2, c3 = st.columns(3)
-                with c1:
-                    rid = st.text_input("Mã phòng")
-                with c2:
-                    name = st.text_input("Tên phòng")
-                    capacity = st.number_input("Sức chứa", 1, 500, 50)
-                with c3:
-                    hq = st.text_input("Cơ sở", value=site)
-                if st.form_submit_button("Lưu"):
-                    _result(
-                        api_post(
-                            "/admin/rooms",
-                            token=token,
-                            json={
-                                "site_code": site,
-                                "id": rid,
-                                "name_room": name,
-                                "capacity": int(capacity),
-                                "id_headquarter": hq,
-                            },
-                        )
-                    )
+        dataframe(rooms, height=520)
+
+        create_tab, update_tab, delete_tab = st.tabs(["Thêm", "Sửa", "Xóa"])
+        with create_tab:
+            _room_form(token, site, mode="create")
+        with update_tab:
+            selected = _select_record(rooms, "Chọn phòng học", "edit_room")
+            if selected:
+                _room_form(token, site, mode="update", current=selected)
+        with delete_tab:
+            selected = _select_record(rooms, "Chọn phòng học", "delete_room")
+            if selected:
+                _delete_button("Xóa phòng học", f"/admin/rooms/{selected.get('id')}", token, {"site_code": site}, "delete_room_btn")
 
     with tabs[5]:
         site = _site_select("Cơ sở", "admin_schedule_site")
         schedules = api_get("/admin/schedules", token=token, params={"site_code": site})
-        metric_card(f"Tổng lịch học ({SITE_LABELS.get(site, site)})", records_count(schedules), icon="▦", accent="red", red_value=True)
-        _toolbar("lịch học", "schedule_toolbar")
+        metric_card(f"Tổng lịch học ({SITE_LABELS.get(site, site)})", records_count(schedules), red_value=True)
         section_title("Danh sách lịch học")
-        html_table(
-            schedules,
-            [
-                ("id", "Mã lịch"),
-                ("id_class", "Mã lớp"),
-                ("name_subject", "Học phần"),
-                ("day_of_week", "Thứ"),
-                ("start_period", "Tiết bắt đầu"),
-                ("end_period", "Tiết kết thúc"),
-                ("id_room", "Phòng"),
-            ],
-            limit=10,
-        )
-        with st.expander("Thêm lịch học", expanded=False):
-            with st.form("add_schedule"):
-                c1, c2, c3 = st.columns(3)
-                with c1:
-                    schedule_id = st.text_input("Mã lịch")
-                    class_id = st.text_input("Mã lớp")
-                with c2:
-                    day = st.number_input("Thứ", 2, 8, 2)
-                    start = st.number_input("Tiết bắt đầu", 1, 12, 1)
-                    end = st.number_input("Tiết kết thúc", 1, 12, 2)
-                with c3:
-                    room = st.text_input("Mã phòng")
-                if st.form_submit_button("Lưu"):
-                    _result(
-                        api_post(
-                            "/admin/schedules",
-                            token=token,
-                            json={
-                                "site_code": site,
-                                "id": schedule_id,
-                                "id_class": class_id,
-                                "day_of_week": int(day),
-                                "start_period": int(start),
-                                "end_period": int(end),
-                                "id_room": room,
-                            },
-                        )
-                    )
+        dataframe(schedules, height=520)
+
+        create_tab, update_tab, delete_tab = st.tabs(["Thêm", "Sửa", "Xóa"])
+        with create_tab:
+            _schedule_form(token, site, mode="create")
+        with update_tab:
+            selected = _select_record(schedules, "Chọn lịch học", "edit_schedule")
+            if selected:
+                _schedule_form(token, site, mode="update", current=selected)
+        with delete_tab:
+            selected = _select_record(schedules, "Chọn lịch học", "delete_schedule")
+            if selected:
+                _delete_button("Xóa lịch học", f"/admin/schedules/{selected.get('id')}", token, {"site_code": site}, "delete_schedule_btn")
+
+
+def _student_form(token, site, mode, current=None):
+    current = current or {}
+    with st.form(f"{mode}_student"):
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            sid = st.text_input("Mã sinh viên", value=current.get("id", ""), disabled=mode == "update")
+            name = st.text_input("Họ tên", value=current.get("name_student", ""))
+            dob = st.text_input("Ngày sinh", value=str(current.get("date_of_birth") or ""), placeholder="YYYY-MM-DD")
+        with c2:
+            address = st.text_input("Địa chỉ", value=current.get("address_student", ""))
+            formal_class = st.text_input("Lớp", value=current.get("formal_class", ""))
+            year = st.number_input("Năm nhập học", 2000, 2100, int(current.get("year_of_admission") or 2024))
+        with c3:
+            phone = st.text_input("SĐT", value=current.get("phone_student", ""))
+            dept = st.text_input("Khoa", value=current.get("id_department", "CNTT"))
+            hq = st.text_input("Cơ sở", value=current.get("id_headquarter", site))
+        if st.form_submit_button("Lưu"):
+            payload = {
+                "site_code": site,
+                "id": sid or current.get("id"),
+                "name_student": name,
+                "date_of_birth": dob or None,
+                "address_student": address,
+                "formal_class": formal_class,
+                "year_of_admission": int(year),
+                "phone_student": phone,
+                "id_department": dept,
+                "id_headquarter": hq,
+            }
+            path = "/admin/students" if mode == "create" else f"/admin/students/{current.get('id')}"
+            _result(api_post(path, token=token, json=payload) if mode == "create" else api_put(path, token=token, json=payload))
+
+
+def _teacher_form(token, site, mode, current=None):
+    current = current or {}
+    with st.form(f"{mode}_teacher"):
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            tid = st.text_input("Mã giảng viên", value=current.get("id", ""), disabled=mode == "update")
+            name = st.text_input("Họ tên", value=current.get("name_teacher", ""))
+        with c2:
+            address = st.text_input("Địa chỉ", value=current.get("address_teacher", ""))
+            degree = st.text_input("Học vị", value=current.get("degree", ""))
+        with c3:
+            phone = st.text_input("SĐT", value=current.get("phone_teacher", ""))
+            dept = st.text_input("Khoa", value=current.get("id_department", "CNTT"))
+            hq = st.text_input("Cơ sở", value=current.get("id_headquarter", site))
+        if st.form_submit_button("Lưu"):
+            payload = {
+                "site_code": site,
+                "id": tid or current.get("id"),
+                "name_teacher": name,
+                "address_teacher": address,
+                "degree": degree,
+                "phone_teacher": phone,
+                "id_department": dept,
+                "id_headquarter": hq,
+            }
+            path = "/admin/teachers" if mode == "create" else f"/admin/teachers/{current.get('id')}"
+            _result(api_post(path, token=token, json=payload) if mode == "create" else api_put(path, token=token, json=payload))
+
+
+def _course_form(token, mode, current=None):
+    current = current or {}
+    with st.form(f"{mode}_course"):
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            cid = st.text_input("Mã học phần", value=current.get("id", ""), disabled=mode == "update")
+        with c2:
+            name = st.text_input("Tên học phần", value=current.get("name_subject", ""))
+            credits = st.number_input("Số tín chỉ", 1, 10, int(current.get("number_of_credit") or 3))
+        with c3:
+            dept = st.text_input("Khoa", value=current.get("id_department", "CNTT"))
+        if st.form_submit_button("Lưu"):
+            payload = {"id": cid or current.get("id"), "name_subject": name, "number_of_credit": int(credits), "id_department": dept}
+            path = "/admin/courses" if mode == "create" else f"/admin/courses/{current.get('id')}"
+            _result(api_post(path, token=token, json=payload) if mode == "create" else api_put(path, token=token, json=payload))
+
+
+def _class_form(token, site, mode, current=None):
+    current = current or {}
+    with st.form(f"{mode}_class"):
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            class_id = st.text_input("Mã lớp", value=current.get("id", ""), disabled=mode == "update")
+            semester = st.number_input("Học kỳ", 1, 3, int(current.get("semester") or 2))
+            year = st.number_input("Năm học", 2000, 2100, int(current.get("school_year") or 2026))
+        with c2:
+            max_student = st.number_input("Sĩ số tối đa", 1, 300, int(current.get("max_student") or 50))
+            hq = st.text_input("Cơ sở", value=current.get("id_headquarter", site))
+        with c3:
+            subject = st.text_input("Mã học phần", value=current.get("id_subject", ""))
+            teacher = st.text_input("Mã giảng viên", value=current.get("id_teacher", ""))
+        if st.form_submit_button("Lưu"):
+            payload = {
+                "site_code": site,
+                "id": class_id or current.get("id"),
+                "semester": int(semester),
+                "school_year": int(year),
+                "number_of_student": int(current.get("number_of_student") or 0),
+                "max_student": int(max_student),
+                "id_subject": subject,
+                "id_teacher": teacher,
+                "id_headquarter": hq,
+            }
+            path = "/admin/class-sections" if mode == "create" else f"/admin/class-sections/{current.get('id')}"
+            _result(api_post(path, token=token, json=payload) if mode == "create" else api_put(path, token=token, json=payload))
+
+
+def _room_form(token, site, mode, current=None):
+    current = current or {}
+    with st.form(f"{mode}_room"):
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            rid = st.text_input("Mã phòng", value=current.get("id", ""), disabled=mode == "update")
+        with c2:
+            name = st.text_input("Tên phòng", value=current.get("name_room", ""))
+            capacity = st.number_input("Sức chứa", 1, 500, int(current.get("capacity") or 50))
+        with c3:
+            hq = st.text_input("Cơ sở", value=current.get("id_headquarter", site))
+        if st.form_submit_button("Lưu"):
+            payload = {"site_code": site, "id": rid or current.get("id"), "name_room": name, "capacity": int(capacity), "id_headquarter": hq}
+            path = "/admin/rooms" if mode == "create" else f"/admin/rooms/{current.get('id')}"
+            _result(api_post(path, token=token, json=payload) if mode == "create" else api_put(path, token=token, json=payload))
+
+
+def _schedule_form(token, site, mode, current=None):
+    current = current or {}
+    with st.form(f"{mode}_schedule"):
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            schedule_id = st.text_input("Mã lịch", value=current.get("id", ""), disabled=mode == "update")
+            class_id = st.text_input("Mã lớp", value=current.get("id_class", ""))
+        with c2:
+            study_date = st.text_input("Ngày học", value=str(current.get("study_date") or ""), placeholder="YYYY-MM-DD")
+            week_number = st.number_input("Tuần học", 1, 60, int(current.get("week_number") or 1))
+            day = st.number_input("Thứ", 2, 8, int(current.get("day_of_week") or 2))
+            start = st.number_input("Tiết bắt đầu", 1, 12, int(current.get("start_period") or 1))
+            end = st.number_input("Tiết kết thúc", 1, 12, int(current.get("end_period") or 2))
+        with c3:
+            start_time = st.text_input("Giờ bắt đầu", value=str(current.get("start_time") or "07:00"))
+            end_time = st.text_input("Giờ kết thúc", value=str(current.get("end_time") or "08:50"))
+            room = st.text_input("Mã phòng", value=current.get("id_room", ""))
+        if st.form_submit_button("Lưu"):
+            payload = {
+                "site_code": site,
+                "id": schedule_id or current.get("id"),
+                "id_class": class_id,
+                "study_date": study_date,
+                "week_number": int(week_number),
+                "day_of_week": int(day),
+                "start_period": int(start),
+                "end_period": int(end),
+                "start_time": start_time,
+                "end_time": end_time,
+                "id_room": room,
+            }
+            path = "/admin/schedules" if mode == "create" else f"/admin/schedules/{current.get('id')}"
+            _result(api_post(path, token=token, json=payload) if mode == "create" else api_put(path, token=token, json=payload))

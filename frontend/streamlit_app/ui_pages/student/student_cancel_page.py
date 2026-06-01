@@ -1,4 +1,4 @@
-"""Trang Streamlit cho nghiệp vụ trang hủy đăng ký của sinh viên, hiển thị dữ liệu và gửi thao tác của người dùng."""
+"""Student cancel registration page."""
 
 import streamlit as st
 
@@ -6,15 +6,18 @@ from api_client import api_get, api_post
 from styles import SITE_LABELS, html_table, page_title, section_title
 
 
-SITE_CODES = ["HL", "NT", "HD", "CG", "HCM"]
+def _active_regs(rows):
+    if not isinstance(rows, list):
+        return []
+    return [row for row in rows if row.get("status") == "DA_DANG_KY"]
 
 
-# Vẽ màn hình/khối giao diện sinh viên hủy đăng ký và gọi API hoặc service khi người dùng thao tác.
 def render_student_cancel(token, user):
-    """Vẽ màn hình/khối giao diện sinh viên hủy đăng ký và gọi API hoặc service khi người dùng thao tác."""
-    page_title("Hủy đăng ký", "Chọn lớp học phần cần hủy khỏi danh sách đăng ký.")
+    page_title("Hủy đăng ký", "Hủy một lớp học phần đang có hiệu lực.")
 
     registrations = api_get("/student/registrations", token=token)
+    active_regs = _active_regs(registrations)
+
     section_title("Danh sách học phần hiện tại")
     html_table(
         registrations,
@@ -26,16 +29,21 @@ def render_student_cancel(token, user):
             ("status", "Trạng thái"),
         ],
         status_columns={"status"},
-        limit=8,
+        limit=12,
     )
 
-    st.divider()
-    c1, c2, c3 = st.columns([0.3, 0.45, 0.25])
+    if not active_regs:
+        st.info("Không có lớp đang đăng ký để hủy.")
+        return
+
+    c1, c2 = st.columns([0.72, 0.28])
     with c1:
-        site = st.selectbox("Cơ sở mở lớp", SITE_CODES, format_func=lambda code: SITE_LABELS.get(code, code))
+        selected = st.selectbox(
+            "Chọn lớp cần hủy",
+            active_regs,
+            format_func=lambda row: f"{row.get('id_class')} - {row.get('name_subject')} - {SITE_LABELS.get(row.get('class_headquarter'), row.get('class_headquarter'))}",
+        )
     with c2:
-        class_id = st.text_input("Mã lớp học phần", placeholder="Nhập mã lớp cần hủy")
-    with c3:
         st.write("")
         if st.button("Hủy đăng ký", use_container_width=True):
             res = api_post(
@@ -43,11 +51,12 @@ def render_student_cancel(token, user):
                 token=token,
                 json={
                     "student_id": user.get("ref_id"),
-                    "class_site_code": site,
-                    "class_id": class_id,
+                    "class_site_code": selected.get("site_code") or selected.get("class_headquarter"),
+                    "class_id": selected.get("id_class"),
                 },
             )
             if res.get("success"):
                 st.success(res["message"])
+                st.rerun()
             else:
                 st.error(res.get("message", res.get("detail", "Hủy đăng ký thất bại")))

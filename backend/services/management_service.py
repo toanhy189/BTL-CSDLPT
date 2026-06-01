@@ -46,6 +46,14 @@ def add_student(data):
     return queries.add_student(data["site_code"], data)
 
 
+def update_student(student_id, data):
+    return queries.update_student(data["site_code"], student_id, data)
+
+
+def delete_student(site_code, student_id):
+    return queries.delete_student(site_code, student_id)
+
+
 # Lấy dữ liệu giảng viên từ nguồn phù hợp để trả về cho tầng gọi phía trên.
 def list_teachers(site_code):
     """Lấy dữ liệu giảng viên từ nguồn phù hợp để trả về cho tầng gọi phía trên."""
@@ -56,6 +64,14 @@ def list_teachers(site_code):
 def add_teacher(data):
     """Thêm mới dữ liệu giảng viên sau khi nhận thông tin từ form hoặc API."""
     return queries.add_teacher(data["site_code"], data)
+
+
+def update_teacher(teacher_id, data):
+    return queries.update_teacher(data["site_code"], teacher_id, data)
+
+
+def delete_teacher(site_code, teacher_id):
+    return queries.delete_teacher(site_code, teacher_id)
 
 
 # Lấy dữ liệu học phần từ nguồn phù hợp để trả về cho tầng gọi phía trên.
@@ -70,6 +86,14 @@ def add_course(data):
     return queries.add_course_to_all_sites(data)
 
 
+def update_course(course_id, data):
+    return queries.update_course_all_sites(course_id, data)
+
+
+def delete_course(course_id):
+    return queries.delete_course_all_sites(course_id)
+
+
 # Lấy dữ liệu lớp học phần từ nguồn phù hợp để trả về cho tầng gọi phía trên.
 def list_class_sections(site_code):
     """Lấy dữ liệu lớp học phần từ nguồn phù hợp để trả về cho tầng gọi phía trên."""
@@ -80,6 +104,14 @@ def list_class_sections(site_code):
 def add_class_section(data):
     """Thêm mới dữ liệu lớp học phần sau khi nhận thông tin từ form hoặc API."""
     return queries.add_class_section(data["site_code"], data)
+
+
+def update_class_section(class_id, data):
+    return queries.update_class_section(data["site_code"], class_id, data)
+
+
+def delete_class_section(site_code, class_id):
+    return queries.delete_class_section(site_code, class_id)
 
 
 # Lấy dữ liệu phòng học từ nguồn phù hợp để trả về cho tầng gọi phía trên.
@@ -94,6 +126,14 @@ def add_room(data):
     return queries.add_room(data["site_code"], data)
 
 
+def update_room(room_id, data):
+    return queries.update_room(data["site_code"], room_id, data)
+
+
+def delete_room(site_code, room_id):
+    return queries.delete_room(site_code, room_id)
+
+
 # Lấy dữ liệu lịch học từ nguồn phù hợp để trả về cho tầng gọi phía trên.
 def list_schedules(site_code):
     """Lấy dữ liệu lịch học từ nguồn phù hợp để trả về cho tầng gọi phía trên."""
@@ -104,3 +144,11 @@ def list_schedules(site_code):
 def add_schedule(data):
     """Thêm mới dữ liệu lịch học sau khi nhận thông tin từ form hoặc API."""
     return queries.add_schedule(data["site_code"], data)
+
+
+def update_schedule(schedule_id, data):
+    return queries.update_schedule(data["site_code"], schedule_id, data)
+
+
+def delete_schedule(site_code, schedule_id):
+    return queries.delete_schedule(site_code, schedule_id)

@@ -48,6 +48,10 @@ class SitePayload(BaseModel):
     site_code: str
 
 
+class RegistrationStatusUpdate(BaseModel):
+    """Schema cap nhat trang thai mo/dong dang ky hoc phan."""
+    registration_open: bool
+
 # Schema tạo mới cơ sở đào tạo.
 class HeadquarterCreate(BaseModel):
     """Schema tạo mới cơ sở đào tạo."""
@@ -103,7 +107,6 @@ class ClassSectionCreate(BaseModel):
     school_year: int | None = None
     number_of_student: int = 0
     max_student: int
-    shift: int | None = None
     id_subject: str
     id_teacher: str
     id_headquarter: str
@@ -125,7 +128,11 @@ class ScheduleCreate(BaseModel):
     site_code: str
     id: str
     id_class: str
+    study_date: str
+    week_number: int | None = None
     day_of_week: int
     start_period: int
     end_period: int
+    start_time: str
+    end_time: str
     id_room: str

@@ -1,22 +1,54 @@
-"""Trang Streamlit cho nghiệp vụ trang chủ sinh viên, hiển thị dữ liệu và gửi thao tác của người dùng."""
+"""Student home page."""
 
 import streamlit as st
 
-from styles import metric_card, page_title, section_title
+from api_client import api_get
+from styles import SITE_LABELS, html_table, metric_card, page_title, records_count, section_title
 
 
-# Vẽ màn hình/khối giao diện sinh viên home và gọi API hoặc service khi người dùng thao tác.
-def render_student_home(user):
-    """Vẽ màn hình/khối giao diện sinh viên home và gọi API hoặc service khi người dùng thao tác."""
-    page_title("Trang chủ sinh viên", "Cổng đăng ký học phần cá nhân.")
+def _active_regs(rows):
+    if not isinstance(rows, list):
+        return []
+    return [row for row in rows if row.get("status") == "DA_DANG_KY"]
 
-    cols = st.columns(3)
-    with cols[0]:
-        metric_card("Mã sinh viên", user.get("ref_id"), icon="▣", accent="red", red_value=True)
-    with cols[1]:
-        metric_card("Cơ sở", user.get("id_headquarter"), icon="▥", accent="blue")
-    with cols[2]:
-        metric_card("Vai trò", "Sinh viên", icon="○", accent="green")
 
-    section_title("Lối tắt")
-    st.info("Chọn Đăng ký học phần, Kết quả đăng ký hoặc Thời khóa biểu ở menu bên trái để thao tác.")
+def render_student_home(token, user):
+    profile = api_get("/student-profile/me", token=token)
+    registrations = api_get("/student/registrations", token=token)
+    schedule = api_get("/student/schedule", token=token, params={"semester": 2, "school_year": 2026})
+    active_regs = _active_regs(registrations)
+
+    student_name = profile.get("name_student") if isinstance(profile, dict) else None
+    student_id = user.get("ref_id")
+    site_code = user.get("id_headquarter")
+
+    page_title(
+        f"Chào mừng {student_name or student_id}",
+        "Cổng sinh viên - đăng ký học phần và theo dõi thời khóa biểu.",
+    )
+
+    cols = [
+        ("Mã sinh viên", student_id, "Tài khoản đăng nhập"),
+        ("Cơ sở quản lý", SITE_LABELS.get(site_code, site_code), "Nơi quản lý hồ sơ"),
+        ("Học phần đăng ký", len(active_regs), "Đang có hiệu lực"),
+        ("Lịch học", records_count(schedule), "Kỳ 2 năm 2026"),
+    ]
+    metric_cols = st.columns(4)
+    for col, (label, value, note) in zip(metric_cols, cols):
+        with col:
+            metric_card(label, value, note=note, red_value=label == "Mã sinh viên")
+
+    section_title("Thông tin sinh viên")
+    html_table(
+        [profile] if isinstance(profile, dict) and not profile.get("_error") else [],
+        [
+            ("id", "Mã SV"),
+            ("name_student", "Họ tên"),
+            ("date_of_birth", "Ngày sinh"),
+            ("formal_class", "Lớp"),
+            ("year_of_admission", "Năm nhập học"),
+            ("id_department", "Khoa"),
+            ("id_headquarter", "Cơ sở"),
+        ],
+        limit=1,
+    )

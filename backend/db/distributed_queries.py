@@ -161,13 +161,12 @@ def danh_sach_lop_hoc_phan_toan_truong():
             l.school_year,
             l.number_of_student,
             l.max_student,
-            l.shift,
             STRING_AGG(DISTINCT lh.id_room, ', ' ORDER BY lh.id_room) AS id_rooms
         FROM lophocphan l
         JOIN hocphan hp ON l.id_subject = hp.id
         LEFT JOIN lichhoc lh ON lh.id_class = l.id
         GROUP BY
             l.id, l.id_headquarter, l.id_subject, hp.name_subject,
-            l.semester, l.school_year, l.number_of_student, l.max_student, l.shift;
+            l.semester, l.school_year, l.number_of_student, l.max_student;
         """
     )

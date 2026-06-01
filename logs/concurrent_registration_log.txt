@@ -1,3 +1,19 @@
 Concurrent registration log.
 [2026-05-12 11:46:36] DANG_KY site=CG class=LHP-CG-006 student=SV-CG-0001 success=True
 [2026-05-14 23:51:36] DANG_KY site=HL class=LHP-HL-007 student=SV-HD-0001 success=True
+[2026-05-27 21:50:40] DANG_KY site=HL class=LHP-HL-023 student=SV-HL-0001 success=True
+[2026-05-31 17:23:53] DANG_KY site=HL class=LHP-HL-001 student=SV-HL-0001 success=True
+[2026-05-31 17:27:20] DANG_KY site=HD class=LHP-HD-001 student=SV-HL-0001 success=True
+[2026-05-31 17:27:48] DANG_KY site=HD class=LHP-HD-008 student=SV-HL-0001 success=True
+[2026-05-31 17:28:50] DANG_KY site=HD class=LHP-HD-003 student=SV-HL-0001 success=True
+[2026-05-31 17:29:23] DOI_LOP site=HD old_class=LHP-HD-001 new_class=LHP-HD-004 student=SV-HL-0001 success=True
+[2026-05-31 18:44:57] RESET_LOP_TEST site=HL class=LHP-HL-TEST max_student=1
+[2026-05-31 18:45:19] DANG_KY site=HL class=LHP-HL-TEST student=SV-HL-0003 success=True
+[2026-05-31 18:45:19] MO_PHONG_DONG_THOI class=LHP-HL-TEST success=1/5
+[2026-05-31 22:50:02] DANG_KY site=HD class=LHP-HD-004 student=SV-HL-0001 success=True
+[2026-05-31 22:50:39] DOI_LOP site=HD old_class=LHP-HD-004 new_class=LHP-HD-012 student=SV-HL-0001 success=True
+[2026-05-31 22:52:08] HUY_DANG_KY site=HD class=LHP-HD-012 student=SV-HL-0001
+[2026-05-31 22:52:35] DANG_KY site=HL class=LHP-HL-016 student=SV-HL-0001 success=True
+[2026-05-31 23:13:37] DANG_KY site=HL class=LHP-HL-TEST student=SV-HL-0002 success=True
+[2026-05-31 23:13:37] MO_PHONG_DONG_THOI class=LHP-HL-TEST success=1/5
+[2026-05-31 23:56:10] DANG_KY site=HL class=LHP-HL-030 student=SV-HL-0001 success=True

@@ -1,29 +1,27 @@
-"""Trang Streamlit cho nghiệp vụ trang lớp phụ trách của giảng viên, hiển thị dữ liệu và gửi thao tác của người dùng."""
+"""Teacher class-section page."""
 
 import streamlit as st
 
 from api_client import api_get
-from styles import html_table, metric_card, page_title, records_count, schedule_grid, section_title, sum_field
+from styles import html_table, metric_card, page_title, records_count, section_title, sum_field
 
 
-# Vẽ màn hình/khối giao diện lớp giảng viên phụ trách và gọi API hoặc service khi người dùng thao tác.
 def render_teacher_classes(token):
-    """Vẽ màn hình/khối giao diện lớp giảng viên phụ trách và gọi API hoặc service khi người dùng thao tác."""
-    page_title("Lớp học phần phụ trách", "Theo dõi lớp giảng dạy, sĩ số và lịch trong tuần.")
+    page_title("Lớp học phần phụ trách", "Theo dõi lớp giảng dạy và danh sách sinh viên theo từng lớp.")
 
     classes = api_get("/teacher/classes", token=token)
-    schedule = api_get("/teacher/schedule", token=token)
+    schedule = api_get("/teacher/schedule", token=token, params={"semester": 2, "school_year": 2026})
 
     cols = st.columns(4)
     with cols[0]:
-        metric_card("Số lớp đang dạy", records_count(classes), icon="▤", accent="red")
+        metric_card("Số lớp đang dạy", records_count(classes), red_value=True)
     with cols[1]:
-        metric_card("Tổng sinh viên", int(sum_field(classes, "number_of_student")), icon="◌", accent="green")
+        metric_card("Tổng sinh viên", int(sum_field(classes, "number_of_student")))
     with cols[2]:
         sites = len({row.get("id_headquarter") for row in classes}) if isinstance(classes, list) else 0
-        metric_card("Số cơ sở tham gia", sites, icon="▥", accent="blue")
+        metric_card("Số cơ sở tham gia", sites)
     with cols[3]:
-        metric_card("Tiết dạy tuần này", records_count(schedule), icon="▦", accent="orange")
+        metric_card("Buổi dạy", records_count(schedule), note="Kỳ 2 năm 2026")
 
     section_title("Danh sách lớp học phần phụ trách")
     html_table(
@@ -38,35 +36,31 @@ def render_teacher_classes(token):
             ("max_student", "Tối đa"),
             ("__progress__", "Tỷ lệ"),
         ],
-        limit=8,
+        limit=None,
         progress=("number_of_student", "max_student"),
     )
 
-    st.divider()
-    left, right = st.columns([0.48, 0.52], gap="medium")
-    with left:
-        schedule_grid(schedule, "Lịch dạy trong tuần")
-    with right:
-        section_title("Danh sách sinh viên theo lớp")
-        rows = classes if isinstance(classes, list) else []
-        if rows:
-            selected = st.selectbox(
-                "Chọn lớp",
-                rows,
-                format_func=lambda row: f"{row.get('id')} - {row.get('name_subject')}",
-            )
-            students = api_get(f"/teacher/classes/{selected.get('id')}/students", token=token)
-            html_table(
-                students,
-                [
-                    ("id_student", "MSSV"),
-                    ("id_student_headquarter", "Cơ sở SV"),
-                    ("name_subject", "Học phần"),
-                    ("registration_date", "Ngày đăng ký"),
-                    ("status", "Trạng thái"),
-                ],
-                limit=8,
-                status_columns={"status"},
-            )
-        else:
-            st.info("Chưa có lớp phụ trách.")
+    section_title("Danh sách sinh viên theo lớp")
+    rows = classes if isinstance(classes, list) else []
+    if not rows:
+        st.info("Chưa có lớp phụ trách.")
+        return
+
+    selected = st.selectbox(
+        "Chọn lớp",
+        rows,
+        format_func=lambda row: f"{row.get('id')} - {row.get('name_subject')}",
+    )
+    students = api_get(f"/teacher/classes/{selected.get('id')}/students", token=token)
+    html_table(
+        students,
+        [
+            ("id_student", "MSSV"),
+            ("id_student_headquarter", "Cơ sở SV"),
+            ("name_subject", "Học phần"),
+            ("registration_date", "Ngày đăng ký"),
+            ("status", "Trạng thái"),
+        ],
+        limit=None,
+        status_columns={"status"},
+    )

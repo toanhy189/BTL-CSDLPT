@@ -58,3 +58,32 @@ def api_post(path, token=None, json=None, params=None):
         return _handle_response(response)
     except requests.RequestException as exc:
         return {"_error": True, "message": str(exc)}
+
+
+def api_put(path, token=None, json=None, params=None):
+    """Gọi API PUT từ Streamlit và bắt lỗi kết nối hoặc timeout."""
+    try:
+        response = requests.put(
+            f"{API_BASE_URL}{path}",
+            headers=_headers(token),
+            params=params,
+            json=json,
+            timeout=30,
+        )
+        return _handle_response(response)
+    except requests.RequestException as exc:
+        return {"_error": True, "message": str(exc)}
+
+
+def api_delete(path, token=None, params=None):
+    """Gọi API DELETE từ Streamlit và bắt lỗi kết nối hoặc timeout."""
+    try:
+        response = requests.delete(
+            f"{API_BASE_URL}{path}",
+            headers=_headers(token),
+            params=params,
+            timeout=30,
+        )
+        return _handle_response(response)
+    except requests.RequestException as exc:
+        return {"_error": True, "message": str(exc)}

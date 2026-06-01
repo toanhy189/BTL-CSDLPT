@@ -58,7 +58,13 @@ def open_classes(site_code: str = Query("HL"), current_user=Depends(require_role
 
 # Xử lý bước nghiệp vụ lịch học trong module này.
 @router.get("/schedule")
-def schedule(current_user=Depends(require_role(["SINH_VIEN", "ADMIN"])), student_id: str | None = None):
+def schedule(
+    current_user=Depends(require_role(["SINH_VIEN", "ADMIN"])),
+    student_id: str | None = None,
+    semester: int | None = Query(None),
+    school_year: int | None = Query(None),
+    week_number: int | None = Query(None),
+):
     """Xử lý bước nghiệp vụ lịch học trong module này."""
     lookup_id = student_id or current_user["ref_id"]
-    return df_to_records(queries.get_student_schedule(lookup_id))
+    return df_to_records(queries.get_student_schedule(lookup_id, semester, school_year, week_number))

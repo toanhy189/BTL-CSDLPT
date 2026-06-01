@@ -1,4 +1,4 @@
-"""Bộ helper giao diện Streamlit: CSS, header, card, bảng, badge và lịch học."""
+"""Shared Streamlit UI helpers for the course registration portal."""
 
 from __future__ import annotations
 
@@ -11,52 +11,45 @@ import streamlit as st
 
 
 ROLE_LABELS = {
-    "ADMIN": "Admin",
+    "ADMIN": "Quản trị viên",
     "GIANG_VIEN": "Giảng viên",
     "SINH_VIEN": "Sinh viên",
 }
 
 ROLE_PORTALS = {
-    "ADMIN": "Cổng quản trị",
+    "ADMIN": "Cổng quản trị đào tạo",
     "GIANG_VIEN": "Cổng giảng viên",
     "SINH_VIEN": "Cổng sinh viên",
 }
 
 SITE_LABELS = {
-    "HL": "Cơ sở Hà Nội",
-    "NT": "Cơ sở Đà Nẵng",
-    "HD": "Cơ sở TP. Hồ Chí Minh",
-    "CG": "Phân hiệu Cần Thơ",
-    "HCM": "Phân hiệu Hải Phòng",
+    "HL": "Cơ sở Hòa Lạc",
+    "NT": "Cơ sở Ngọc Trúc",
+    "HD": "Cơ sở Hà Đông",
+    "CG": "Cơ sở Cầu Giấy",
+    "HCM": "Cơ sở TP.HCM",
 }
 
 
-# Escape dữ liệu trước khi nhúng vào HTML để tránh vỡ giao diện.
 def _escape(value: Any) -> str:
-    """Escape dữ liệu trước khi nhúng vào HTML để tránh vỡ giao diện."""
     if value is None:
         return ""
     return html.escape(str(value))
 
 
-# Định dạng số theo kiểu dễ đọc trước khi đưa vào card hoặc bảng.
 def _number(value: Any) -> str:
-    """Định dạng số theo kiểu dễ đọc trước khi đưa vào card hoặc bảng."""
     try:
         if isinstance(value, str) and not value.strip():
             return "0"
         number = float(value)
     except (TypeError, ValueError):
         return _escape(value)
-
     if number.is_integer():
         return f"{int(number):,}".replace(",", ".")
     return f"{number:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
-# Chuẩn hóa DataFrame, dict hoặc list thành danh sách record cho component HTML.
 def _records(data: Any) -> list[dict[str, Any]]:
-    """Chuẩn hóa DataFrame, dict hoặc list thành danh sách record cho component HTML."""
     if data is None or (isinstance(data, dict) and data.get("_error")):
         return []
     if isinstance(data, pd.DataFrame):
@@ -68,43 +61,35 @@ def _records(data: Any) -> list[dict[str, Any]]:
     return []
 
 
-# Nạp CSS tùy biến cho toàn bộ frontend Streamlit.
 def load_styles() -> None:
-    """Nạp CSS tùy biến cho toàn bộ frontend Streamlit."""
     st.markdown(
         """
         <style>
         :root {
-            --red: #d71920;
-            --red-dark: #b11226;
-            --red-soft: #fff1f2;
-            --red-pale: #fff6f7;
-            --blue: #1d4ed8;
-            --blue-dark: #173b70;
-            --green: #16a34a;
-            --orange: #f59e0b;
-            --purple: #7c3aed;
-            --ink: #101828;
-            --text: #1f2937;
-            --muted: #667085;
-            --line: #e4e7ec;
-            --bg: #f7f8fb;
-            --card: #ffffff;
-            --shadow: 0 8px 24px rgba(16, 24, 40, .07);
-            --shadow-soft: 0 2px 10px rgba(16, 24, 40, .05);
+            --portal-red: #b5121b;
+            --portal-red-dark: #8f0f17;
+            --portal-red-soft: #f9d7da;
+            --portal-border: #e5b5b9;
+            --portal-line: #e5e7eb;
+            --portal-text: #111827;
+            --portal-muted: #667085;
+            --portal-bg: #ffffff;
+            --portal-blue: #dbeafe;
+            --portal-green: #dcfce7;
+            --portal-warn: #fff7ed;
         }
 
         #MainMenu, footer, header { visibility: hidden; }
 
         .stApp {
-            background: var(--bg);
-            color: var(--text);
-            font-family: "Inter", "Segoe UI", Arial, sans-serif;
+            background: #fff;
+            color: var(--portal-text);
+            font-family: Arial, "Segoe UI", sans-serif;
         }
 
         .block-container {
-            max-width: 1600px;
-            padding: 0.85rem 1.35rem 2rem 1.35rem;
+            max-width: 1680px;
+            padding: 0 1rem 2rem 1rem;
         }
 
         h1, h2, h3, h4, h5, h6, p, label, span, div {
@@ -113,79 +98,37 @@ def load_styles() -> None:
 
         [data-testid="stSidebar"] {
             background: #ffffff;
-            border-right: 1px solid var(--line);
-            box-shadow: 3px 0 18px rgba(16, 24, 40, .03);
+            border-right: 1px solid var(--portal-border);
         }
 
         [data-testid="stSidebar"] > div:first-child {
-            padding: 1rem 1rem 1.2rem 1rem;
+            padding: .65rem .75rem 1rem .75rem;
         }
 
         .sidebar-brand {
-            display: flex;
-            align-items: center;
-            gap: 13px;
-            padding: 6px 2px 18px 2px;
-            border-bottom: 1px solid var(--line);
-            margin-bottom: 16px;
-        }
-
-        .logo-square {
-            width: 50px;
-            height: 50px;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #e73a4b 0%, #c70718 100%);
-            color: white;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 10px 22px rgba(215, 25, 32, .24);
-            position: relative;
-            flex: 0 0 auto;
-        }
-
-        .logo-square::before,
-        .logo-square::after {
-            content: "";
-            width: 12px;
-            height: 20px;
-            border: 2px solid #fff;
-            border-radius: 2px 6px 6px 2px;
-            background: rgba(255,255,255,.12);
-            position: absolute;
-            top: 15px;
-        }
-
-        .logo-square::before {
-            left: 12px;
-            transform: skewY(4deg);
-        }
-
-        .logo-square::after {
-            right: 12px;
-            transform: scaleX(-1) skewY(4deg);
+            padding: 8px 4px 14px 4px;
+            border-bottom: 1px solid var(--portal-border);
+            margin-bottom: 8px;
         }
 
         .sidebar-title {
-            color: var(--red-dark);
-            font-weight: 900;
-            line-height: 1.15;
-            font-size: 14px;
-            text-transform: uppercase;
+            color: var(--portal-red);
+            font-weight: 800;
+            font-size: 13px;
+            line-height: 1.25;
         }
 
         .sidebar-subtitle {
-            color: var(--muted);
+            color: #555;
             font-size: 12px;
-            margin-top: 4px;
+            margin-top: 3px;
         }
 
         .sidebar-group {
-            color: var(--red);
-            font-size: 11px;
-            font-weight: 900;
-            text-transform: uppercase;
-            margin: 18px 4px 8px 4px;
+            color: var(--portal-red);
+            font-size: 12px;
+            font-weight: 700;
+            padding: 6px 4px;
         }
 
         [data-testid="stSidebar"] .stRadio > label {
@@ -193,26 +136,22 @@ def load_styles() -> None:
         }
 
         [data-testid="stSidebar"] div[role="radiogroup"] {
-            gap: 6px;
+            gap: 0;
         }
 
         [data-testid="stSidebar"] div[role="radiogroup"] label {
-            min-height: 46px;
-            padding: 9px 12px;
-            border-radius: 8px;
-            color: #344054;
-            font-weight: 700;
-            border-left: 4px solid transparent;
-        }
-
-        [data-testid="stSidebar"] div[role="radiogroup"] label:hover {
-            background: #f9fafb;
+            min-height: 38px;
+            padding: 8px 8px;
+            border-radius: 0;
+            color: #111;
+            font-weight: 500;
+            border-bottom: 1px solid var(--portal-border);
         }
 
         [data-testid="stSidebar"] div[role="radiogroup"] label:has(input:checked) {
-            background: linear-gradient(90deg, #fff1f2 0%, #fff8f9 100%);
-            color: var(--red-dark);
-            border-left-color: var(--red);
+            background: var(--portal-red-soft);
+            color: var(--portal-red-dark);
+            font-weight: 700;
         }
 
         [data-testid="stSidebar"] .stButton button {
@@ -220,303 +159,185 @@ def load_styles() -> None:
         }
 
         .support-box {
-            margin-top: 28px;
-            padding: 15px;
-            background: linear-gradient(135deg, #fff7f8 0%, #ffffff 100%);
-            border: 1px solid #fde2e5;
-            border-radius: 8px;
-            color: #344054;
-            font-size: 13px;
+            margin-top: 18px;
+            padding: 10px;
+            border-top: 1px solid var(--portal-border);
+            color: #555;
+            font-size: 12px;
         }
 
         .support-title {
-            font-weight: 850;
-            color: #1f2937;
-            margin-bottom: 8px;
+            color: var(--portal-red);
+            font-weight: 700;
+            margin-bottom: 4px;
         }
 
         .portal-header {
-            min-height: 72px;
-            background: #ffffff;
-            border-bottom: 1px solid var(--line);
-            box-shadow: var(--shadow-soft);
+            min-height: 50px;
+            background: var(--portal-red);
+            color: white;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 12px 18px;
-            margin: -0.85rem -1.35rem 20px -1.35rem;
-        }
-
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 14px;
+            padding: 7px 12px;
+            margin: 0 -1rem 14px -1rem;
         }
 
         .brand-title {
-            color: var(--red-dark);
-            font-size: 19px;
-            font-weight: 900;
+            font-size: 16px;
+            font-weight: 800;
             line-height: 1.15;
-            text-transform: uppercase;
         }
 
         .brand-subtitle {
-            color: var(--muted);
-            font-size: 13px;
-            margin-top: 4px;
+            font-size: 12px;
+            opacity: .95;
+            margin-top: 2px;
         }
 
-        .top-actions {
-            display: flex;
-            align-items: center;
-            gap: 18px;
-        }
-
-        .bell {
-            position: relative;
-            width: 34px;
-            height: 34px;
-            border-radius: 999px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            color: #475467;
-            border: 1px solid transparent;
-        }
-
-        .bell::before {
-            content: "";
-            width: 13px;
-            height: 15px;
-            border: 2px solid currentColor;
-            border-radius: 9px 9px 5px 5px;
-            border-bottom-width: 1px;
-        }
-
-        .bell::after {
-            content: "";
-            position: absolute;
-            bottom: 6px;
-            width: 8px;
-            height: 2px;
-            border-radius: 999px;
-            background: currentColor;
-        }
-
-        .bell-badge {
-            position: absolute;
-            top: -1px;
-            right: -1px;
-            background: var(--red);
-            color: white;
-            min-width: 18px;
-            height: 18px;
-            padding: 0 5px;
-            border-radius: 99px;
-            font-size: 11px;
-            line-height: 18px;
-            text-align: center;
-            font-weight: 850;
-        }
-
+        .top-actions,
         .user-pill {
             display: flex;
             align-items: center;
             gap: 10px;
-            padding-left: 12px;
-            border-left: 1px solid var(--line);
         }
 
-        .avatar {
-            background: linear-gradient(135deg, #ee4556, #c9152a);
-            color: white;
-            width: 42px;
-            height: 42px;
-            border-radius: 999px;
+        .bell {
+            width: 28px;
+            height: 28px;
+            border-radius: 99px;
+            border: 1px solid rgba(255,255,255,.55);
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-weight: 900;
-            box-shadow: 0 8px 18px rgba(215, 25, 32, .18);
+            font-weight: 800;
+        }
+
+        .avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 99px;
+            background: #ffffff;
+            color: var(--portal-red);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
         }
 
         .user-name {
-            color: #111827;
-            font-weight: 850;
-            font-size: 14px;
+            font-size: 13px;
+            font-weight: 700;
+            color: white;
         }
 
         .user-role {
-            color: var(--muted);
-            font-size: 12px;
-            margin-top: 2px;
-        }
-
-        .chevron {
-            width: 8px;
-            height: 8px;
-            border-right: 2px solid #667085;
-            border-bottom: 2px solid #667085;
-            transform: rotate(45deg);
-            margin-left: 6px;
+            font-size: 11px;
+            color: rgba(255,255,255,.9);
         }
 
         .page-title-wrap {
-            display: flex;
-            align-items: flex-start;
-            gap: 14px;
-            margin: 6px 0 14px 0;
-        }
-
-        .title-bar {
-            width: 4px;
-            min-height: 32px;
-            background: #d0d5dd;
-            border-radius: 4px;
-            margin-top: 4px;
+            margin: 10px 0 12px 0;
         }
 
         .page-title {
-            font-size: 26px;
-            font-weight: 900;
-            color: #101828;
-            line-height: 1.2;
+            font-size: 22px;
+            color: #111;
+            font-weight: 800;
         }
 
         .page-subtitle {
-            color: var(--muted);
-            font-size: 14px;
-            margin-top: 5px;
-        }
-
-        .section-card,
-        div[data-testid="stVerticalBlock"]:has(.card-surface-marker) {
-            background: var(--card);
-            border: 1px solid var(--line);
-            border-radius: 8px;
-            padding: 16px 18px;
-            box-shadow: var(--shadow-soft);
-            margin: 12px 0;
+            font-size: 13px;
+            color: var(--portal-muted);
+            margin-top: 3px;
         }
 
         .section-head {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 14px;
-            margin-bottom: 12px;
+            gap: 12px;
+            border: 1px solid var(--portal-red);
+            border-bottom: 0;
+            border-radius: 7px 7px 0 0;
+            padding: 9px 12px;
+            margin-top: 12px;
+            background: #fff;
         }
 
         .section-title {
-            font-size: 17px;
-            font-weight: 900;
-            color: #111827;
+            color: #111;
+            font-size: 15px;
+            font-weight: 800;
         }
 
         .section-subtitle {
-            color: var(--muted);
-            font-size: 13px;
-            margin-top: 3px;
+            color: var(--portal-muted);
+            font-size: 12px;
+            margin-top: 2px;
+        }
+
+        .plain-section-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin: 14px 0 8px 0;
+            padding-bottom: 7px;
+            border-bottom: 1px solid var(--portal-red);
+        }
+
+        .section-right {
+            color: var(--portal-muted);
+            font-size: 12px;
+        }
+
+        div[data-testid="stVerticalBlock"]:has(.card-surface-marker) {
+            border: 1px solid var(--portal-red);
+            border-radius: 7px;
+            padding: 12px 14px;
+            background: #fff;
         }
 
         .metric-card {
-            background: var(--card);
-            border: 1px solid var(--line);
-            border-radius: 8px;
-            padding: 18px;
-            box-shadow: var(--shadow-soft);
-            min-height: 112px;
-            display: flex;
-            align-items: center;
-            gap: 14px;
+            border: 1px solid var(--portal-border);
+            border-radius: 7px;
+            padding: 12px 13px;
+            background: #fff;
+            min-height: 86px;
         }
-
-        .metric-icon {
-            width: 54px;
-            height: 54px;
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 26px;
-            background: #fff1f2;
-            color: var(--red);
-            flex: 0 0 auto;
-            font-weight: 900;
-        }
-
-        .metric-icon.blue { background: #eff6ff; color: #2563eb; }
-        .metric-icon.green { background: #ecfdf3; color: #16a34a; }
-        .metric-icon.orange { background: #fff7ed; color: #f59e0b; }
-        .metric-icon.purple { background: #f5f3ff; color: #7c3aed; }
-        .metric-icon.gray { background: #f2f4f7; color: #475467; }
 
         .metric-label {
-            color: #475467;
-            font-size: 13px;
-            font-weight: 750;
+            color: #555;
+            font-size: 12px;
+            font-weight: 700;
         }
 
         .metric-value {
-            color: #101828;
-            font-size: 26px;
-            font-weight: 950;
-            line-height: 1.1;
-            margin-top: 5px;
+            color: #111;
+            font-size: 22px;
+            font-weight: 800;
+            margin-top: 4px;
         }
 
-        .metric-value.red { color: var(--red); }
-
-        .metric-note {
-            color: var(--green);
-            font-size: 12px;
-            font-weight: 750;
-            margin-top: 8px;
-        }
-
-        .mini-note {
-            color: var(--muted);
-            font-size: 12px;
-            margin-top: 7px;
-        }
-
-        .filter-panel {
-            background: #ffffff;
-            border: 1px solid var(--line);
-            border-radius: 8px;
-            box-shadow: var(--shadow-soft);
-            padding: 13px 16px 4px 16px;
-            margin: 0 0 14px 0;
-        }
-
-        .inline-actions {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
+        .metric-value.red { color: var(--portal-red); }
+        .metric-note { color: var(--portal-muted); font-size: 12px; margin-top: 5px; }
 
         div.stButton > button,
         div[data-testid="stFormSubmitButton"] button {
-            border-radius: 6px;
-            border: 1px solid var(--red);
-            background: var(--red);
+            border-radius: 5px;
+            border: 1px solid var(--portal-red);
+            background: var(--portal-red);
             color: white;
-            font-weight: 850;
-            min-height: 38px;
-            box-shadow: none;
+            font-weight: 700;
+            min-height: 36px;
         }
 
         div.stButton > button:hover,
         div[data-testid="stFormSubmitButton"] button:hover {
-            border-color: var(--red-dark);
-            background: var(--red-dark);
-            color: #fff;
-        }
-
-        div.stButton > button[kind="secondary"] {
-            background: white;
-            color: var(--red);
+            background: var(--portal-red-dark);
+            border-color: var(--portal-red-dark);
+            color: white;
         }
 
         .stTextInput input,
@@ -524,537 +345,185 @@ def load_styles() -> None:
         .stDateInput input,
         .stTextArea textarea,
         .stSelectbox div[data-baseweb="select"] {
-            border-radius: 6px;
-        }
-
-        .stTextInput label,
-        .stNumberInput label,
-        .stDateInput label,
-        .stTextArea label,
-        .stSelectbox label {
-            color: #1f2937;
-            font-weight: 750;
-            font-size: 13px;
-        }
-
-        [data-testid="stDataFrame"] {
-            border: 1px solid var(--line);
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: none;
-        }
-
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 10px;
-            border-bottom: 1px solid var(--line);
-        }
-
-        .stTabs [data-baseweb="tab"] {
-            padding: 13px 18px;
-            font-weight: 850;
-        }
-
-        .stTabs [aria-selected="true"] {
-            color: var(--red-dark);
-            border-bottom: 2px solid var(--red);
+            border-radius: 4px;
+            min-height: 35px;
         }
 
         .ui-table-wrap {
-            border: 1px solid var(--line);
-            border-radius: 8px;
+            border: 1px solid var(--portal-red);
+            border-radius: 0 0 7px 7px;
             overflow: hidden;
             background: white;
+            margin-bottom: 18px;
         }
 
         .ui-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 13px;
+            font-size: 12px;
         }
 
         .ui-table th {
             text-align: left;
-            background: #f8fafc;
-            color: #1f2937;
-            font-weight: 850;
-            padding: 10px 12px;
-            border-bottom: 1px solid var(--line);
+            background: #fff;
+            color: #111;
+            font-weight: 800;
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--portal-red);
             white-space: nowrap;
         }
 
         .ui-table td {
-            padding: 10px 12px;
-            border-bottom: 1px solid var(--line);
-            color: #111827;
+            padding: 8px 10px;
+            border-bottom: 1px solid #eee;
+            color: #111;
             vertical-align: middle;
         }
 
-        .ui-table tr:last-child td {
-            border-bottom: 0;
+        .ui-table tr:nth-child(even) td {
+            background: #fafafa;
         }
 
         .status-badge {
             display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            border-radius: 999px;
-            padding: 4px 10px;
-            font-size: 12px;
-            font-weight: 850;
+            border-radius: 4px;
+            padding: 3px 7px;
+            font-size: 11px;
+            font-weight: 800;
             border: 1px solid transparent;
             white-space: nowrap;
         }
 
-        .status-ok {
-            color: #067647;
-            background: #ecfdf3;
-            border-color: #abefc6;
-        }
-
-        .status-warn {
-            color: #b54708;
-            background: #fffaeb;
-            border-color: #fedf89;
-        }
-
-        .status-error {
-            color: #b42318;
-            background: #fef3f2;
-            border-color: #fecdca;
-        }
+        .status-ok { color: #166534; background: #dcfce7; border-color: #86efac; }
+        .status-warn { color: #92400e; background: #fffbeb; border-color: #fcd34d; }
+        .status-error { color: #991b1b; background: #fee2e2; border-color: #fca5a5; }
 
         .progress-track {
-            width: 120px;
+            width: 110px;
             height: 7px;
-            border-radius: 99px;
-            background: #e4e7ec;
+            background: #e5e7eb;
             overflow: hidden;
         }
 
-        .progress-fill {
-            height: 100%;
-            border-radius: 99px;
-            background: #16a34a;
-        }
-
+        .progress-fill { height: 100%; background: #16a34a; }
         .progress-fill.warn { background: #f59e0b; }
-        .progress-fill.danger { background: #d71920; }
+        .progress-fill.danger { background: var(--portal-red); }
+
+        .empty-state {
+            border: 1px solid var(--portal-red);
+            border-radius: 0 0 7px 7px;
+            padding: 18px;
+            color: #777;
+            text-align: center;
+            background: #f3f4f6;
+            margin-bottom: 18px;
+        }
 
         .schedule-grid {
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
-            font-size: 13px;
-            border: 1px solid var(--line);
-            border-radius: 8px;
-            overflow: hidden;
+            font-size: 12px;
+            border: 1px solid var(--portal-red);
+            margin-bottom: 16px;
         }
 
         .schedule-grid th,
         .schedule-grid td {
-            border: 1px solid var(--line);
-            padding: 10px;
-            min-height: 74px;
+            border: 1px solid #d7dde5;
+            padding: 0;
+            min-height: 58px;
             vertical-align: top;
             background: white;
         }
 
         .schedule-grid th {
             text-align: center;
-            background: #f8fafc;
-            font-weight: 900;
+            background: #fff;
+            font-weight: 800;
+            padding: 8px 4px;
         }
 
         .slot-label {
-            width: 96px;
-            color: #344054;
-            font-weight: 850;
+            width: 70px;
+            color: white;
+            background: var(--portal-red) !important;
+            font-weight: 800;
             text-align: center;
+            padding: 8px 4px !important;
         }
 
         .event-pill {
-            border-radius: 6px;
-            padding: 8px 9px;
+            min-height: 100%;
+            padding: 7px 8px;
             line-height: 1.35;
-            font-weight: 750;
-            text-align: center;
-            border: 1px solid #fecaca;
-            background: #fff1f2;
-            color: #b11226;
-            margin-bottom: 6px;
+            border: 1px solid #ef4444;
+            background: #cfe3ff;
+            color: #111;
+            font-weight: 600;
         }
 
-        .event-pill.green {
-            border-color: #bbf7d0;
-            background: #f0fdf4;
-            color: #15803d;
-        }
+        .event-title { font-weight: 800; }
+        .event-sub { font-size: 11px; margin-top: 2px; }
 
-        .event-pill.blue {
-            border-color: #bfdbfe;
-            background: #eff6ff;
-            color: #1d4ed8;
-        }
-
-        .event-pill.orange {
-            border-color: #fed7aa;
-            background: #fff7ed;
-            color: #c2410c;
-        }
-
-        .event-pill.purple {
-            border-color: #ddd6fe;
-            background: #f5f3ff;
-            color: #7c3aed;
-        }
-
-        .empty-state {
-            border: 1px dashed #cbd5e1;
-            border-radius: 8px;
-            padding: 20px;
-            color: var(--muted);
-            text-align: center;
-            background: #fff;
-        }
-
-        .login-page-marker {
-            display: none;
-        }
-
-        .stApp:has(.login-page-marker) [data-testid="stSidebar"] {
-            display: none;
-        }
-
-        .stApp:has(.login-page-marker) .block-container {
-            max-width: none;
-            min-height: 100vh;
+        [data-testid="stDataFrame"] {
+            border: 1px solid var(--portal-line);
+            border-radius: 6px;
             overflow: hidden;
-            padding: 56px 64px 96px 64px;
-            position: relative;
         }
 
-        .stApp:has(.login-page-marker) {
-            background:
-                linear-gradient(90deg, rgba(255,255,255,.96) 0%, rgba(255,255,255,.72) 46%, rgba(255,255,255,.98) 100%),
-                radial-gradient(circle at 33% 14%, rgba(191,226,255,.82) 0, transparent 34%),
-                linear-gradient(180deg, #cfe9ff 0%, #eef7ff 44%, #ffffff 100%);
-        }
-
-        .stApp:has(.login-page-marker) .block-container::before {
-            content: "";
-            position: absolute;
-            left: -2%;
-            right: 36%;
-            bottom: 84px;
-            height: 50vh;
-            min-height: 390px;
-            background:
-                linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.86)),
-                repeating-linear-gradient(90deg, transparent 0 24px, rgba(23,59,112,.26) 25px 38px, transparent 39px 76px),
-                linear-gradient(90deg, #f3eee7 0 18%, #d7cabb 18% 20%, #f6f0e8 20% 50%, #cdd7df 50% 53%, #f2eee6 53% 100%);
-            border-radius: 12px 12px 0 0;
-            box-shadow: inset 0 0 0 2px rgba(255,255,255,.48);
-            clip-path: polygon(0 40%, 18% 22%, 34% 36%, 43% 5%, 57% 5%, 66% 36%, 82% 22%, 100% 40%, 100% 100%, 0 100%);
-            z-index: 0;
-        }
-
-        .stApp:has(.login-page-marker) .block-container::after {
-            content: "";
-            position: absolute;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            height: 84px;
-            background: linear-gradient(180deg, #df0f1d, #b60815);
-            z-index: 1;
-        }
-
-        .stApp:has(.login-page-marker) [data-testid="stVerticalBlock"],
-        .stApp:has(.login-page-marker) [data-testid="column"] {
-            position: relative;
-            z-index: 2;
-        }
-
-        .login-layout {
-            min-height: 100vh;
-            position: relative;
-            overflow: hidden;
-            padding: 56px 64px 96px 64px;
-        }
-
-        .login-layout::before {
-            content: "";
-            position: absolute;
-            left: -2%;
-            right: 36%;
-            bottom: 84px;
-            height: 50vh;
-            min-height: 390px;
-            background:
-                linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.86)),
-                repeating-linear-gradient(90deg, transparent 0 24px, rgba(23,59,112,.26) 25px 38px, transparent 39px 76px),
-                linear-gradient(90deg, #f3eee7 0 18%, #d7cabb 18% 20%, #f6f0e8 20% 50%, #cdd7df 50% 53%, #f2eee6 53% 100%);
-            border-radius: 12px 12px 0 0;
-            box-shadow: inset 0 0 0 2px rgba(255,255,255,.48);
-            clip-path: polygon(0 40%, 18% 22%, 34% 36%, 43% 5%, 57% 5%, 66% 36%, 82% 22%, 100% 40%, 100% 100%, 0 100%);
-            z-index: 0;
-        }
-
-        .login-layout::after {
-            content: "";
-            position: absolute;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            height: 84px;
-            background: linear-gradient(180deg, #df0f1d, #b60815);
-            z-index: 1;
-        }
-
-        .login-content {
-            position: relative;
-            z-index: 2;
-            display: grid;
-            grid-template-columns: 1.28fr .72fr;
-            gap: 56px;
-            align-items: center;
-            min-height: calc(100vh - 152px);
-        }
-
-        .login-title {
-            color: var(--red-dark);
-            font-size: clamp(34px, 3.2vw, 58px);
-            line-height: 1.08;
-            font-weight: 950;
-            text-transform: uppercase;
-            max-width: 980px;
-        }
-
-        .login-subtitle {
-            margin-top: 22px;
-            color: #4b5563;
-            font-size: 24px;
-            font-weight: 850;
-        }
-
-        .login-features {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 26px;
-            margin-top: 48px;
-            max-width: 900px;
-        }
-
-        .login-feature {
-            display: grid;
-            grid-template-columns: 44px 1fr;
-            gap: 14px;
-            align-items: center;
-        }
-
-        .feature-icon {
-            width: 38px;
-            height: 38px;
-            color: var(--red-dark);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 8px;
-            font-size: 24px;
-            font-weight: 900;
-        }
-
-        .feature-title {
-            font-weight: 900;
-            color: #111827;
-            font-size: 17px;
-        }
-
-        .feature-sub {
-            color: #4b5563;
-            font-size: 14px;
-            margin-top: 4px;
-        }
-
-        .login-form-shell {
-            background: rgba(255,255,255,.94);
-            border: 1px solid rgba(203, 213, 225, .95);
-            border-radius: 16px;
-            box-shadow: 0 22px 45px rgba(15, 23, 42, .18);
-            padding: 34px;
-            backdrop-filter: blur(8px);
-        }
-
-        div[data-testid="stVerticalBlock"]:has(.login-form-panel) {
-            background: rgba(255,255,255,.94);
-            border: 1px solid rgba(203, 213, 225, .95);
-            border-radius: 16px;
-            box-shadow: 0 22px 45px rgba(15, 23, 42, .18);
-            padding: 34px;
-            backdrop-filter: blur(8px);
-        }
-
-        .login-card-title {
-            text-align: center;
-            color: var(--red-dark);
-            font-size: 24px;
-            font-weight: 950;
-            text-transform: uppercase;
-            margin-bottom: 8px;
-        }
-
-        .login-card-sub {
-            text-align: center;
-            color: #667085;
-            font-size: 14px;
-            margin-bottom: 26px;
-        }
-
-        .login-form-shell .stButton button,
-        .login-form-shell div[data-testid="stFormSubmitButton"] button,
-        div[data-testid="stVerticalBlock"]:has(.login-form-panel) div[data-testid="stFormSubmitButton"] button {
-            width: 100%;
-            min-height: 52px;
-            font-size: 16px;
-            border-radius: 7px;
-        }
-
-        .login-form-shell .stTextInput input,
-        div[data-testid="stVerticalBlock"]:has(.login-form-panel) .stTextInput input {
-            min-height: 46px;
-        }
-
-        .login-secondary {
-            margin-top: 12px;
-            border: 1px solid var(--line);
-            border-radius: 7px;
-            min-height: 48px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #111827;
-            font-weight: 850;
-        }
-
-        .forgot-link {
-            margin-top: 22px;
-            text-align: center;
-            color: var(--red);
-            text-decoration: underline;
-            font-weight: 750;
-        }
-
-        .login-footer-text {
-            position: absolute;
-            left: 0;
-            right: 0;
-            bottom: 13px;
-            z-index: 3;
-            text-align: center;
-            color: white;
-            font-weight: 900;
-            letter-spacing: .4px;
-            text-transform: uppercase;
-            font-size: 18px;
-        }
-
-        .login-footer-sub {
-            display: block;
-            font-size: 13px;
-            font-weight: 500;
-            text-transform: none;
-            margin-top: 5px;
-            opacity: .9;
-        }
-
-        @media (max-width: 1100px) {
-            .portal-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 12px;
-            }
-
-            .login-layout {
-                padding: 34px 20px 104px 20px;
-            }
-
-            .stApp:has(.login-page-marker) .block-container {
-                padding: 34px 20px 104px 20px;
-            }
-
-            .login-content {
-                grid-template-columns: 1fr;
-                gap: 24px;
-            }
-
-            .login-features {
-                grid-template-columns: 1fr;
-                margin-top: 28px;
-            }
-
-            .login-layout::before {
-                right: 0;
-                opacity: .45;
-            }
-
-            .stApp:has(.login-page-marker) .block-container::before {
-                right: 0;
-                opacity: .45;
-            }
-        }
+        .login-page-marker { display: none; }
+        .stApp:has(.login-page-marker) [data-testid="stSidebar"] { display: none; }
+        .stApp:has(.login-page-marker) .block-container { padding-top: 5rem; max-width: 1120px; }
+        .login-title { color: var(--portal-red); font-size: 30px; font-weight: 900; text-transform: uppercase; }
+        .login-subtitle { color: #333; font-size: 16px; margin: 8px 0 24px 0; }
+        .login-feature { border-left: 3px solid var(--portal-red); padding: 8px 12px; margin: 10px 0; }
+        .feature-title { font-weight: 800; }
+        .feature-sub { color: #555; font-size: 13px; }
+        .login-card-title { color: var(--portal-red); font-size: 22px; font-weight: 900; }
+        .login-card-sub { color: #555; margin-bottom: 16px; }
+        .login-secondary, .forgot-link, .login-footer-text { color: #555; font-size: 13px; margin-top: 10px; }
         </style>
         """,
         unsafe_allow_html=True,
     )
 
 
-# Nạp CSS riêng cho màn hình đăng nhập.
 def login_mode_css() -> None:
-    """Nạp CSS riêng cho màn hình đăng nhập."""
     st.markdown('<div class="login-page-marker"></div>', unsafe_allow_html=True)
 
 
-# Tạo tên cổng chức năng dựa trên vai trò của người dùng đang đăng nhập.
 def role_portal(user: dict[str, Any] | None) -> str:
-    """Tạo tên cổng chức năng dựa trên vai trò của người dùng đang đăng nhập."""
     if not user:
         return "Cổng quản lý đào tạo"
     return ROLE_PORTALS.get(user.get("role", ""), "Cổng quản lý đào tạo")
 
 
-# Vẽ màn hình/khối giao diện header và gọi API hoặc service khi người dùng thao tác.
 def render_header(user: dict[str, Any] | None = None, subtitle: str = "Cổng quản lý đào tạo") -> None:
-    """Vẽ màn hình/khối giao diện header và gọi API hoặc service khi người dùng thao tác."""
     name = "Khách"
     role = ""
     initials = "?"
-    badge = 3
     if user:
         name = user.get("full_name") or user.get("username") or "Người dùng"
         role = ROLE_LABELS.get(user.get("role", ""), user.get("role", ""))
-        initials_source = user.get("username") or name
-        initials = (initials_source[:2] or "?").upper()
-        badge = 5 if user.get("role") == "ADMIN" else 3
+        source = user.get("username") or name
+        initials = (source[:2] or "?").upper()
 
     st.markdown(
         f"""
         <div class="portal-header">
-            <div class="brand">
-                <div class="logo-square"></div>
-                <div>
-                    <div class="brand-title">Hệ thống đăng ký học phần nhiều cơ sở</div>
-                    <div class="brand-subtitle">{_escape(subtitle)}</div>
-                </div>
+            <div>
+                <div class="brand-title">Hệ thống đăng ký học phần nhiều cơ sở</div>
+                <div class="brand-subtitle">{_escape(subtitle)}</div>
             </div>
             <div class="top-actions">
-                <div class="bell"><span class="bell-badge">{badge}</span></div>
+                <div class="bell">!</div>
                 <div class="user-pill">
                     <div class="avatar">{_escape(initials)}</div>
                     <div>
                         <div class="user-name">{_escape(name)}</div>
                         <div class="user-role">{_escape(role)}</div>
                     </div>
-                    <div class="chevron"></div>
                 </div>
             </div>
         </div>
@@ -1063,26 +532,19 @@ def render_header(user: dict[str, Any] | None = None, subtitle: str = "Cổng qu
     )
 
 
-# Vẽ màn hình/khối giao diện sidebar brand và gọi API hoặc service khi người dùng thao tác.
 def render_sidebar_brand(subtitle: str) -> None:
-    """Vẽ màn hình/khối giao diện sidebar brand và gọi API hoặc service khi người dùng thao tác."""
     st.sidebar.markdown(
         f"""
         <div class="sidebar-brand">
-            <div class="logo-square"></div>
-            <div>
-                <div class="sidebar-title">Hệ thống đăng ký học phần nhiều cơ sở</div>
-                <div class="sidebar-subtitle">{_escape(subtitle)}</div>
-            </div>
+            <div class="sidebar-title">Hệ thống đăng ký học phần nhiều cơ sở</div>
+            <div class="sidebar-subtitle">{_escape(subtitle)}</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
 
-# Vẽ màn hình/khối giao diện support box và gọi API hoặc service khi người dùng thao tác.
 def render_support_box(role: str) -> None:
-    """Vẽ màn hình/khối giao diện support box và gọi API hoặc service khi người dùng thao tác."""
     title = {
         "ADMIN": "Hỗ trợ quản trị",
         "GIANG_VIEN": "Hỗ trợ giảng viên",
@@ -1092,103 +554,75 @@ def render_support_box(role: str) -> None:
         f"""
         <div class="support-box">
             <div class="support-title">{_escape(title)}</div>
-            <div>(028) 7102 9999</div>
-            <div style="margin-top:6px;">support@university.edu.vn</div>
+            <div>Dữ liệu demo nhiều cơ sở</div>
+            <div style="margin-top:4px;">Hỗ trợ đồ án CSDL phân tán</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
 
-# Xử lý bước nghiệp vụ page title trong module này.
 def page_title(title: str, subtitle: str | None = None) -> None:
-    """Xử lý bước nghiệp vụ page title trong module này."""
     subtitle_html = f'<div class="page-subtitle">{_escape(subtitle)}</div>' if subtitle else ""
     st.markdown(
         f"""
         <div class="page-title-wrap">
-            <div class="title-bar"></div>
-            <div>
-                <div class="page-title">{_escape(title)}</div>
-                {subtitle_html}
-            </div>
+            <div class="page-title">{_escape(title)}</div>
+            {subtitle_html}
         </div>
         """,
         unsafe_allow_html=True,
     )
 
 
-# Xử lý bước nghiệp vụ section title trong module này.
 def section_title(title: str, subtitle: str | None = None, right: str | None = None) -> None:
-    """Xử lý bước nghiệp vụ section title trong module này."""
-    subtitle_html = f'<div class="section-subtitle">{_escape(subtitle)}</div>' if subtitle else ""
-    right_html = f"<div>{right}</div>" if right else ""
-    st.markdown(
-        f"""
-        <div class="section-head">
-            <div>
-                <div class="section-title">{_escape(title)}</div>
-                {subtitle_html}
-            </div>
-            {right_html}
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    if right:
+        st.markdown(f"**{title}**  \n{right}")
+    else:
+        st.markdown(f"**{title}**")
+    if subtitle:
+        st.caption(subtitle)
 
 
-# Xử lý bước nghiệp vụ metric card trong module này.
 def metric_card(
     label: str,
     value: Any,
-    icon: str = "▣",
+    icon: str = "",
     accent: str = "red",
     note: str | None = None,
     red_value: bool = False,
 ) -> None:
-    """Xử lý bước nghiệp vụ metric card trong module này."""
     note_html = f'<div class="metric-note">{_escape(note)}</div>' if note else ""
     value_class = " red" if red_value else ""
     st.markdown(
         f"""
         <div class="metric-card">
-            <div class="metric-icon {_escape(accent)}">{_escape(icon)}</div>
-            <div>
-                <div class="metric-label">{_escape(label)}</div>
-                <div class="metric-value{value_class}">{_number(value)}</div>
-                {note_html}
-            </div>
+            <div class="metric-label">{_escape(label)}</div>
+            <div class="metric-value{value_class}">{_number(value)}</div>
+            {note_html}
         </div>
         """,
         unsafe_allow_html=True,
     )
 
 
-# Xử lý bước nghiệp vụ marker card trong module này.
 def marker_card() -> None:
-    """Xử lý bước nghiệp vụ marker card trong module này."""
     st.markdown('<div class="card-surface-marker"></div>', unsafe_allow_html=True)
 
 
-# Xử lý bước nghiệp vụ filter panel trong module này.
 def filter_panel(title: str | None = None) -> None:
-    """Xử lý bước nghiệp vụ filter panel trong module này."""
-    title_html = f'<div class="section-title" style="margin-bottom:8px;">{_escape(title)}</div>' if title else ""
-    st.markdown(f'<div class="filter-panel">{title_html}</div>', unsafe_allow_html=True)
+    if title:
+        st.markdown(f'<div class="section-title">{_escape(title)}</div>', unsafe_allow_html=True)
 
 
-# Xử lý bước nghiệp vụ dataframe trong module này.
 def dataframe(data: Any, height: int = 420, rename: dict[str, str] | None = None, columns: list[str] | None = None) -> None:
-    """Xử lý bước nghiệp vụ dataframe trong module này."""
     if isinstance(data, dict) and data.get("_error"):
         st.error(data.get("message", "Không thể tải dữ liệu"))
         return
-
     rows = _records(data)
     if not rows:
         st.markdown('<div class="empty-state">Không có dữ liệu</div>', unsafe_allow_html=True)
         return
-
     df = pd.DataFrame(rows)
     if columns:
         present = [col for col in columns if col in df.columns]
@@ -1196,31 +630,24 @@ def dataframe(data: Any, height: int = 420, rename: dict[str, str] | None = None
             df = df[present]
     if rename:
         df = df.rename(columns=rename)
-
     st.dataframe(df, use_container_width=True, hide_index=True, height=height)
 
 
-# Xử lý bước nghiệp vụ status class trong module này.
 def _status_class(value: Any) -> str:
-    """Xử lý bước nghiệp vụ status class trong module này."""
     normalized = str(value or "").upper()
-    if normalized in {"OK", "DA_DANG_KY", "ĐÃ ĐĂNG KÝ", "ACTIVE", "SUCCESS", "THÀNH CÔNG"}:
+    if normalized in {"OK", "DA_DANG_KY", "ACTIVE", "SUCCESS", "TRUE", "THANH_CONG"}:
         return "status-ok"
-    if normalized in {"ERROR", "FAILED", "HUY", "ĐÃ HỦY", "THẤT BẠI"}:
+    if normalized in {"ERROR", "FAILED", "DA_HUY", "HUY", "FALSE", "THAT_BAI"}:
         return "status-error"
     return "status-warn"
 
 
-# Xử lý bước nghiệp vụ status badge trong module này.
 def status_badge(value: Any, label: str | None = None) -> str:
-    """Xử lý bước nghiệp vụ status badge trong module này."""
     shown = label or str(value or "Đang xử lý")
     return f'<span class="status-badge {_status_class(value)}">{_escape(shown)}</span>'
 
 
-# Xử lý bước nghiệp vụ progress bar trong module này.
 def progress_bar(current: Any, maximum: Any) -> str:
-    """Xử lý bước nghiệp vụ progress bar trong module này."""
     try:
         cur = float(current or 0)
         max_value = float(maximum or 0)
@@ -1228,13 +655,9 @@ def progress_bar(current: Any, maximum: Any) -> str:
     except (TypeError, ValueError):
         percent = 0
     tone = "danger" if percent >= 95 else "warn" if percent >= 80 else ""
-    return (
-        f'<div class="progress-track"><div class="progress-fill {tone}" '
-        f'style="width:{percent:.0f}%"></div></div>'
-    )
+    return f'<div class="progress-track"><div class="progress-fill {tone}" style="width:{percent:.0f}%"></div></div>'
 
 
-# Xử lý bước nghiệp vụ html table trong module này.
 def html_table(
     data: Any,
     columns: list[tuple[str, str]],
@@ -1243,16 +666,13 @@ def html_table(
     status_columns: set[str] | None = None,
     progress: tuple[str, str] | None = None,
 ) -> None:
-    """Xử lý bước nghiệp vụ html table trong module này."""
     if isinstance(data, dict) and data.get("_error"):
         st.error(data.get("message", "Không thể tải dữ liệu"))
         return
-
     rows = _records(data)
     if not rows:
         st.markdown(f'<div class="empty-state">{_escape(empty)}</div>', unsafe_allow_html=True)
         return
-
     shown_rows = rows[:limit] if limit else rows
     status_columns = status_columns or set()
     header = "".join(f"<th>{_escape(label)}</th>" for _, label in columns)
@@ -1268,7 +688,6 @@ def html_table(
             else:
                 cells.append(f"<td>{_escape(row.get(key))}</td>")
         body_rows.append(f"<tr>{''.join(cells)}</tr>")
-
     st.markdown(
         f"""
         <div class="ui-table-wrap">
@@ -1282,52 +701,70 @@ def html_table(
     )
 
 
-# Xử lý bước nghiệp vụ lịch học grid trong module này.
 def schedule_grid(data: Any, title: str = "Thời khóa biểu") -> None:
-    """Xử lý bước nghiệp vụ lịch học grid trong module này."""
     rows = _records(data)
     section_title(title)
     if not rows:
         st.markdown('<div class="empty-state">Chưa có lịch học</div>', unsafe_allow_html=True)
         return
 
-    days = [2, 3, 4, 5, 6, 7]
-    bands = [("Sáng", 1, 4), ("Chiều", 5, 8), ("Tối", 9, 12)]
-    accents = ["red", "green", "blue", "orange", "purple"]
+    days = [2, 3, 4, 5, 6, 7, 8]
+    day_names = {2: "Thứ 2", 3: "Thứ 3", 4: "Thứ 4", 5: "Thứ 5", 6: "Thứ 6", 7: "Thứ 7", 8: "Chủ nhật"}
+    week_start = None
+    for row in rows:
+        try:
+            day = int(row.get("day_of_week") or 0)
+        except (TypeError, ValueError):
+            continue
+        study_date = row.get("study_date")
+        if day in days and study_date:
+            parsed = pd.to_datetime(study_date, errors="coerce")
+            if not pd.isna(parsed):
+                week_start = parsed - pd.Timedelta(days=day - 2)
+                break
+    day_labels = {
+        day: f"{day_names[day]} ({(week_start + pd.Timedelta(days=day - 2)).strftime('%d/%m')})"
+        if week_start is not None
+        else day_names[day]
+        for day in days
+    }
 
-    # Dựng HTML cho một sự kiện lịch học/lịch dạy trong ô thời khóa biểu.
-    def event_html(row: dict[str, Any], idx: int) -> str:
-        """Dựng HTML cho một sự kiện lịch học/lịch dạy trong ô thời khóa biểu."""
-        course = row.get("name_subject") or row.get("id_class") or row.get("id")
-        code = row.get("id_class") or row.get("id") or ""
+    def overlaps(row: dict[str, Any], period: int, day: int) -> bool:
+        try:
+            return (
+                int(row.get("day_of_week") or 0) == day
+                and int(row.get("start_period") or 0) <= period <= int(row.get("end_period") or 0)
+            )
+        except (TypeError, ValueError):
+            return False
+
+    def event_html(row: dict[str, Any]) -> str:
+        course = row.get("name_subject") or row.get("id_class") or ""
+        code = row.get("id_class") or ""
         room = row.get("id_room") or row.get("id_rooms") or ""
-        start = row.get("start_period") or ""
-        end = row.get("end_period") or ""
-        accent = accents[idx % len(accents)]
+        teacher = row.get("name_teacher") or ""
+        start_time = row.get("start_time") or ""
+        end_time = row.get("end_time") or ""
+        time_text = f"{start_time} - {end_time}" if start_time or end_time else ""
         return (
-            f'<div class="event-pill {accent}">'
-            f'<div>{_escape(code)}</div>'
-            f'<div>{_escape(course)}</div>'
-            f'<div>Tiết {_escape(start)} - {_escape(end)}</div>'
-            f'<div>{_escape(room)}</div>'
+            '<div class="event-pill">'
+            f'<div class="event-title">{_escape(course)}</div>'
+            f'<div class="event-sub">{_escape(code)}</div>'
+            f'<div class="event-sub">Phòng: {_escape(room)}</div>'
+            f'<div class="event-sub">{_escape(teacher)}</div>'
+            f'<div class="event-sub">{_escape(time_text)}</div>'
             "</div>"
         )
 
-    header = '<th class="slot-label">Buổi</th>' + "".join(f"<th>Thứ {day}</th>" for day in days)
+    header = '<th class="slot-label"></th>' + "".join(f"<th>{day_labels[day]}</th>" for day in days)
     table_rows = []
-    for label, start_min, start_max in bands:
-        cells = [f'<td class="slot-label">{_escape(label)}</td>']
+    for period in range(1, 13):
+        cells = [f'<td class="slot-label">Tiết {period}</td>']
         for day in days:
-            matched = [
-                row
-                for row in rows
-                if int(row.get("day_of_week") or 0) == day
-                and start_min <= int(row.get("start_period") or 0) <= start_max
-            ]
-            content = "".join(event_html(row, idx) for idx, row in enumerate(matched))
+            matched = [row for row in rows if overlaps(row, period, day) and int(row.get("start_period") or 0) == period]
+            content = "".join(event_html(row) for row in matched)
             cells.append(f"<td>{content}</td>")
         table_rows.append(f"<tr>{''.join(cells)}</tr>")
-
     st.markdown(
         f"""
         <table class="schedule-grid">
@@ -1339,15 +776,11 @@ def schedule_grid(data: Any, title: str = "Thời khóa biểu") -> None:
     )
 
 
-# Xử lý bước nghiệp vụ records count trong module này.
 def records_count(data: Any) -> int:
-    """Xử lý bước nghiệp vụ records count trong module này."""
     return len(_records(data))
 
 
-# Xử lý bước nghiệp vụ sum field trong module này.
 def sum_field(data: Any, field: str) -> float:
-    """Xử lý bước nghiệp vụ sum field trong module này."""
     total = 0.0
     for row in _records(data):
         try:

@@ -30,13 +30,12 @@ ALLOWED_TABLES = {
 
 # Đổi mã site sang tên hiển thị thân thiện trên giao diện.
 def get_site_display_name(site_code):
-    """Đổi mã site sang tên hiển thị thân thiện trên giao diện."""
     return SITE_NAMES.get(site_code, site_code)
 
 
 # Bổ sung cột site_code và site_name sau khi đọc dữ liệu từ một site.
 def _add_site_columns(df, site_code):
-    """Bổ sung cột site_code và site_name sau khi đọc dữ liệu từ một site."""
+
     df = df.copy()
     df["site_code"] = site_code
     df["site_name"] = get_site_display_name(site_code)
@@ -45,7 +44,7 @@ def _add_site_columns(df, site_code):
 
 # Ghép các DataFrame không rỗng thành một bảng kết quả chung.
 def _concat_frames(frames):
-    """Ghép các DataFrame không rỗng thành một bảng kết quả chung."""
+  
     non_empty_frames = [frame for frame in frames if frame is not None and not frame.empty]
     if not non_empty_frames:
         return pd.DataFrame()
@@ -65,7 +64,7 @@ def _read_all_sites_query(query, params=None):
 
 # Đọc dữ liệu bằng một câu SQL trên site được chọn và gắn thông tin site.
 def read_query(site_code, query, params=None):
-    """Đọc dữ liệu bằng một câu SQL trên site được chọn và gắn thông tin site."""
+    
     conn = None
     try:
         conn = get_connection(site_code)
@@ -87,7 +86,7 @@ def read_query(site_code, query, params=None):
 
 # Đọc toàn bộ một bảng hợp lệ tại site được chọn để phục vụ quản trị nhanh.
 def read_table(site_code, table_name):
-    """Đọc toàn bộ một bảng hợp lệ tại site được chọn để phục vụ quản trị nhanh."""
+  
     normalized_table = table_name.strip().lower()
     if normalized_table not in ALLOWED_TABLES:
         print(f"[{site_code}] Bang khong hop le: {table_name}")
@@ -98,7 +97,7 @@ def read_table(site_code, table_name):
 
 # Đọc cùng một bảng từ tất cả site rồi ghép thành dữ liệu toàn hệ thống.
 def read_all_sites(table_name):
-    """Đọc cùng một bảng từ tất cả site rồi ghép thành dữ liệu toàn hệ thống."""
+   
     frames = []
     for site_code in SITE_CODES:
         df = read_table(site_code, table_name)
@@ -109,7 +108,7 @@ def read_all_sites(table_name):
 
 # Thống kê số lượt đăng ký học phần theo từng cơ sở mở lớp.
 def thong_ke_dang_ky_theo_co_so():
-    """Thống kê số lượt đăng ký học phần theo từng cơ sở mở lớp."""
+    
     query = """
         SELECT
             l.id_headquarter,
@@ -135,7 +134,7 @@ def thong_ke_dang_ky_theo_co_so():
 
 # Tìm các học phần có nhiều lượt đăng ký nhất trên toàn hệ thống.
 def hoc_phan_dang_ky_nhieu_nhat():
-    """Tìm các học phần có nhiều lượt đăng ký nhất trên toàn hệ thống."""
+   
     query = """
         SELECT
             hp.id AS id_subject,
@@ -163,7 +162,7 @@ def hoc_phan_dang_ky_nhieu_nhat():
 
 # Liệt kê sinh viên đăng ký lớp học phần khác cơ sở quản lý hồ sơ của mình.
 def sinh_vien_dang_ky_cheo_co_so():
-    """Liệt kê sinh viên đăng ký lớp học phần khác cơ sở quản lý hồ sơ của mình."""
+    
     query = """
         SELECT
             d.id_student,
@@ -198,7 +197,7 @@ def sinh_vien_dang_ky_cheo_co_so():
 
 # Tính tỷ lệ lấp đầy, sức chứa và số chỗ còn lại của từng lớp học phần.
 def ty_le_lap_day_lop_hoc_phan():
-    """Tính tỷ lệ lấp đầy, sức chứa và số chỗ còn lại của từng lớp học phần."""
+    
     query = """
         SELECT
             l.id AS id_class,
@@ -236,7 +235,7 @@ def ty_le_lap_day_lop_hoc_phan():
 
 # Đếm số lớp học phần đang mở theo từng cơ sở.
 def thong_ke_so_lop_theo_co_so():
-    """Đếm số lớp học phần đang mở theo từng cơ sở."""
+    
     query = """
         SELECT
             id_headquarter,
@@ -259,7 +258,7 @@ def thong_ke_so_lop_theo_co_so():
 
 # Đếm số sinh viên thuộc từng cơ sở quản lý.
 def thong_ke_sinh_vien_theo_co_so():
-    """Đếm số sinh viên thuộc từng cơ sở quản lý."""
+    
     query = """
         SELECT
             id_headquarter,
@@ -282,7 +281,7 @@ def thong_ke_sinh_vien_theo_co_so():
 
 # Gom danh sách lớp học phần toàn trường kèm cơ sở, học phần, sĩ số và phòng học.
 def danh_sach_lop_hoc_phan_toan_truong():
-    """Gom danh sách lớp học phần toàn trường kèm cơ sở, học phần, sĩ số và phòng học."""
+    
     query = """
         SELECT
             l.id AS id_class,
@@ -293,7 +292,6 @@ def danh_sach_lop_hoc_phan_toan_truong():
             l.school_year,
             l.number_of_student,
             l.max_student,
-            l.shift,
             STRING_AGG(DISTINCT lh.id_room, ', ' ORDER BY lh.id_room) AS id_rooms
         FROM lophocphan l
         JOIN hocphan hp ON l.id_subject = hp.id
@@ -306,8 +304,7 @@ def danh_sach_lop_hoc_phan_toan_truong():
             l.semester,
             l.school_year,
             l.number_of_student,
-            l.max_student,
-            l.shift;
+            l.max_student;
     """
     df = _read_all_sites_query(query)
     if df.empty:
@@ -324,7 +321,6 @@ def danh_sach_lop_hoc_phan_toan_truong():
         "school_year",
         "number_of_student",
         "max_student",
-        "shift",
         "id_rooms",
     ]
     return df[columns].sort_values(["id_headquarter", "id_class"], ignore_index=True)

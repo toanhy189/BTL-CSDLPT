@@ -96,7 +96,6 @@ CREATE TABLE LopHocPhan (
     school_year int,
     number_of_student int DEFAULT 0,
     max_student int NOT NULL,
-    shift int,
     ID_subject varchar(255) NOT NULL,
     ID_teacher varchar(255) NOT NULL,
     ID_headquarter varchar(255) NOT NULL,
@@ -115,9 +114,13 @@ CREATE TABLE LopHocPhan (
 CREATE TABLE LichHoc (
     ID varchar(255) NOT NULL,
     ID_class varchar(255) NOT NULL,
+    study_date date NOT NULL,
+    week_number int,
     day_of_week int NOT NULL,
     start_period int NOT NULL,
     end_period int NOT NULL,
+    start_time time NOT NULL,
+    end_time time NOT NULL,
     ID_room varchar(255) NOT NULL,
     CONSTRAINT PK_LichHoc PRIMARY KEY (ID),
     CONSTRAINT FK_LichHoc_LopHocPhan 
@@ -127,7 +130,9 @@ CREATE TABLE LichHoc (
     CONSTRAINT CK_LichHoc_Thu
         CHECK (day_of_week BETWEEN 2 AND 8),
     CONSTRAINT CK_LichHoc_Tiet
-        CHECK (start_period > 0 AND end_period >= start_period)
+        CHECK (start_period > 0 AND end_period >= start_period),
+    CONSTRAINT CK_LichHoc_Gio
+        CHECK (end_time > start_time)
 );
 
 -- 9. BẢNG ĐĂNG KÝ

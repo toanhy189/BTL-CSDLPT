@@ -230,7 +230,6 @@ def render_class_section_management():
                 school_year = st.number_input("Năm học", min_value=2000, max_value=2100, value=2024)
             with col2:
                 max_student = st.number_input("Sĩ số tối đa", min_value=1, max_value=300, value=50)
-                shift = st.number_input("Ca học", min_value=1, max_value=10, value=1)
                 hq = st.text_input("Cơ sở mở lớp", value=site_code)
             with col3:
                 subject_id = _pick_id("Học phần", subjects, "id", "name_subject", key="class_subject")
@@ -243,7 +242,6 @@ def render_class_section_management():
                     "school_year": int(school_year),
                     "number_of_student": 0,
                     "max_student": int(max_student),
-                    "shift": int(shift),
                     "id_subject": subject_id,
                     "id_teacher": teacher_id,
                     "id_headquarter": hq,
@@ -271,19 +269,27 @@ def render_schedule_management():
                 schedule_id = st.text_input("Mã lịch học", placeholder="VD: LH-HL-031-1")
                 class_id = _pick_id("Lớp học phần", classes, "id", "name_subject", key="schedule_class")
             with col2:
+                study_date = st.text_input("Ngay hoc", placeholder="YYYY-MM-DD")
+                week_number = st.number_input("Tuan hoc", min_value=1, max_value=60, value=1)
                 day = st.number_input("Thứ trong tuần", min_value=2, max_value=8, value=2)
                 start_period = st.number_input("Tiết bắt đầu", min_value=1, max_value=12, value=1)
                 end_period = st.number_input("Tiết kết thúc", min_value=1, max_value=12, value=2)
             with col3:
+                start_time = st.text_input("Gio bat dau", value="07:00")
+                end_time = st.text_input("Gio ket thuc", value="08:50")
                 room_id = _pick_id("Phòng học", rooms, "id", "name_room", key="schedule_room")
             submitted = st.form_submit_button("Thêm mới")
             if submitted:
                 data = {
                     "id": schedule_id,
                     "id_class": class_id,
+                    "study_date": study_date,
+                    "week_number": int(week_number),
                     "day_of_week": int(day),
                     "start_period": int(start_period),
                     "end_period": int(end_period),
+                    "start_time": start_time,
+                    "end_time": end_time,
                     "id_room": room_id,
                 }
                 show_result(*queries.add_schedule(site_code, data))

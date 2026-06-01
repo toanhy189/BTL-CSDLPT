@@ -61,14 +61,13 @@ def _insert_account(site_code, username, password, role, ref_id=None, id_headqua
 
 
 # Lấy một mã dữ liệu mẫu từ bảng sinh viên/giảng viên để gắn tài khoản demo.
-def _fetch_one_id(site_code, table_name, id_col="id"):
-    """Lấy một mã dữ liệu mẫu từ bảng sinh viên/giảng viên để gắn tài khoản demo."""
+def _fetch_all_ids(site_code, table_name, id_col="id"):
+    """Lay toan bo ma sinh vien/giang vien de tao tai khoan dang nhap."""
     conn = get_connection(site_code)
     try:
         with conn.cursor() as cursor:
-            cursor.execute(f"SELECT {id_col} FROM {table_name} ORDER BY {id_col} LIMIT 1;")
-            row = cursor.fetchone()
-            return row[0] if row else None
+            cursor.execute(f"SELECT {id_col} FROM {table_name} ORDER BY {id_col};")
+            return [row[0] for row in cursor.fetchall()]
     finally:
         conn.close()
 
@@ -83,8 +82,7 @@ def _ensure_demo_accounts():
 
     for site_code in SITE_CODES:
         try:
-            student_id = _fetch_one_id(site_code, "sinhvien")
-            if student_id:
+            for student_id in _fetch_all_ids(site_code, "sinhvien"):
                 _insert_account(
                     site_code,
                     student_id.lower(),
@@ -93,8 +91,7 @@ def _ensure_demo_accounts():
                     student_id,
                     site_code,
                 )
-            teacher_id = _fetch_one_id(site_code, "giangvien")
-            if teacher_id:
+            for teacher_id in _fetch_all_ids(site_code, "giangvien"):
                 _insert_account(
                     site_code,
                     teacher_id.lower(),

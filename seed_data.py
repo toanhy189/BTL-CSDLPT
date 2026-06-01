@@ -1,5 +1,6 @@
 """Module phục vụ nghiệp vụ seed data trong hệ thống đăng ký học phần phân tán."""
 
+from datetime import date, time, timedelta
 import random
 import sys
 
@@ -31,18 +32,45 @@ KHOA_DATA = [
     ("KHMT", "Khoa Khoa hoc may tinh"),
 ]
 
-HOC_PHAN_DATA = []
-for i in range(1, 21):
-    HOC_PHAN_DATA.append(
-        (
-            f"HP{i:03d}",
-            f"Hoc phan {fake.catch_phrase()}",
-            random.randint(2, 4),
-            random.choice(KHOA_DATA)[0],
-        )
-    )
+HOC_PHAN_DATA = [
+    ("HP001", "Nhap mon lap trinh", 3, "CNTT"),
+    ("HP002", "Cau truc du lieu va giai thuat", 3, "KHMT"),
+    ("HP003", "Co so du lieu", 3, "HTTT"),
+    ("HP004", "He quan tri co so du lieu", 3, "HTTT"),
+    ("HP005", "Mang may tinh", 3, "CNTT"),
+    ("HP006", "He dieu hanh", 3, "CNTT"),
+    ("HP007", "Lap trinh huong doi tuong", 3, "CNTT"),
+    ("HP008", "Cong nghe phan mem", 3, "CNTT"),
+    ("HP009", "Phan tich thiet ke he thong", 3, "HTTT"),
+    ("HP010", "Tri tue nhan tao", 3, "KHMT"),
+    ("HP011", "Hoc may", 3, "KHMT"),
+    ("HP012", "An toan thong tin", 3, "ATTT"),
+    ("HP013", "Mat ma hoc", 3, "ATTT"),
+    ("HP014", "Kien truc may tinh", 3, "DTVT"),
+    ("HP015", "Lap trinh Web", 3, "CNTT"),
+    ("HP016", "Lap trinh ung dung di dong", 3, "CNTT"),
+    ("HP017", "Dien toan dam may", 3, "HTTT"),
+    ("HP018", "Du lieu lon", 3, "KHMT"),
+    ("HP019", "Khai pha du lieu", 3, "KHMT"),
+    ("HP020", "Kiem thu phan mem", 3, "CNTT"),
+    ("INT102", "Co so du lieu phan tan", 3, "CNTT"),
+]
 
-HOC_PHAN_DATA.append(("INT102", "Co so du lieu phan tan", 3, "CNTT"))
+PERIOD_TIME = {
+    1: (time(7, 0), time(7, 50)),
+    2: (time(8, 0), time(8, 50)),
+    3: (time(9, 0), time(9, 50)),
+    4: (time(10, 0), time(10, 50)),
+    5: (time(11, 0), time(11, 50)),
+    6: (time(12, 0), time(12, 50)),
+    7: (time(13, 0), time(13, 50)),
+    8: (time(14, 0), time(14, 50)),
+    9: (time(15, 0), time(15, 50)),
+    10: (time(16, 0), time(16, 50)),
+    11: (time(17, 0), time(17, 50)),
+    12: (time(18, 0), time(18, 50)),
+}
+SEMESTER_START_DATE = date(2026, 4, 20)
 
 # 2. Du lieu phan manh theo site.
 PHONG_HOC_DATA = {site: [] for site in SITE_CODES}
@@ -96,15 +124,15 @@ for site in SITE_CODES:
 
     for i in range(1, 31):
         class_id = f"LHP-{site}-{i:03d}"
-        shift = random.choice([1, 2, 3, 4])
+        semester = 2
+        school_year = 2026
         LOP_HOC_PHAN_DATA[site].append(
             (
                 class_id,
-                random.choice([1, 2]),
-                2024,
+                semester,
+                school_year,
                 0,
                 random.choice([40, 50, 60, 80]),
-                shift,
                 random.choice(HOC_PHAN_DATA)[0],
                 random.choice(GIANG_VIEN_DATA[site])[0],
                 site,
@@ -117,24 +145,45 @@ for site in SITE_CODES:
         rooms = random.sample(PHONG_HOC_DATA[site], session_count)
         for index, (day_of_week, room) in enumerate(zip(days, rooms), start=1):
             start_period = random.choice([1, 3, 5, 7])
-            LICH_HOC_DATA[site].append(
-                (
-                    f"LH-{site}-{i:03d}-{index}",
-                    class_id,
-                    day_of_week,
-                    start_period,
-                    start_period + 1,
-                    room[0],
+            end_period = start_period + 1
+            start_time = PERIOD_TIME[start_period][0]
+            end_time = PERIOD_TIME[end_period][1]
+            for week_number in range(1, 7):
+                study_date = SEMESTER_START_DATE + timedelta(weeks=week_number - 1, days=day_of_week - 2)
+                LICH_HOC_DATA[site].append(
+                    (
+                        f"LH-{site}-{i:03d}-{index}-W{week_number:02d}",
+                        class_id,
+                        study_date,
+                        week_number,
+                        day_of_week,
+                        start_period,
+                        end_period,
+                        start_time,
+                        end_time,
+                        room[0],
+                    )
                 )
-            )
 
 # Lop dac biet de test dang ky dong thoi.
 LOP_HOC_PHAN_DATA["HL"].append(
-    ("LHP-HL-TEST", 1, 2024, 0, 1, 1, "INT102", GIANG_VIEN_DATA["HL"][0][0], "HL")
+    ("LHP-HL-TEST", 2, 2026, 0, 1, "INT102", GIANG_VIEN_DATA["HL"][0][0], "HL")
 )
-LICH_HOC_DATA["HL"].append(
-    ("LH-HL-TEST-1", "LHP-HL-TEST", 2, 1, 2, PHONG_HOC_DATA["HL"][0][0])
-)
+for week_number in range(1, 7):
+    LICH_HOC_DATA["HL"].append(
+        (
+            f"LH-HL-TEST-W{week_number:02d}",
+            "LHP-HL-TEST",
+            SEMESTER_START_DATE + timedelta(weeks=week_number - 1),
+            week_number,
+            2,
+            1,
+            2,
+            PERIOD_TIME[1][0],
+            PERIOD_TIME[2][1],
+            PHONG_HOC_DATA["HL"][0][0],
+        )
+    )
 
 
 # Nạp dữ liệu dùng chung cần nhân bản sang tất cả site.
@@ -185,13 +234,13 @@ def seed_fragmented_data(conn, site_code):
     if site_code in LOP_HOC_PHAN_DATA:
         execute_values(
             cursor,
-            "INSERT INTO LopHocPhan (ID, semester, school_year, number_of_student, max_student, shift, ID_subject, ID_teacher, ID_headquarter) VALUES %s ON CONFLICT DO NOTHING",
+            "INSERT INTO LopHocPhan (ID, semester, school_year, number_of_student, max_student, ID_subject, ID_teacher, ID_headquarter) VALUES %s ON CONFLICT DO NOTHING",
             LOP_HOC_PHAN_DATA[site_code],
         )
     if site_code in LICH_HOC_DATA:
         execute_values(
             cursor,
-            "INSERT INTO LichHoc (ID, ID_class, day_of_week, start_period, end_period, ID_room) VALUES %s ON CONFLICT DO NOTHING",
+            "INSERT INTO LichHoc (ID, ID_class, study_date, week_number, day_of_week, start_period, end_period, start_time, end_time, ID_room) VALUES %s ON CONFLICT DO NOTHING",
             LICH_HOC_DATA[site_code],
         )
     conn.commit()

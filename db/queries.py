@@ -330,7 +330,6 @@ def get_class_sections(site_code):
             l.school_year,
             l.number_of_student,
             l.max_student,
-            l.shift,
             l.id_subject,
             hp.name_subject,
             l.id_teacher,
@@ -343,7 +342,7 @@ def get_class_sections(site_code):
         LEFT JOIN lichhoc lh ON lh.id_class = l.id
         GROUP BY
             l.id, l.semester, l.school_year, l.number_of_student, l.max_student,
-            l.shift, l.id_subject, hp.name_subject, l.id_teacher,
+            l.id_subject, hp.name_subject, l.id_teacher,
             gv.name_teacher, l.id_headquarter
         ORDER BY l.id;
         """,
@@ -358,9 +357,9 @@ def add_class_section(site_code, data):
         """
         INSERT INTO lophocphan (
             id, semester, school_year, number_of_student, max_student,
-            shift, id_subject, id_teacher, id_headquarter
+            id_subject, id_teacher, id_headquarter
         )
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
         """,
         (
             data["id"],
@@ -368,7 +367,6 @@ def add_class_section(site_code, data):
             data.get("school_year"),
             data.get("number_of_student", 0),
             data["max_student"],
-            data.get("shift"),
             data["id_subject"],
             data["id_teacher"],
             data["id_headquarter"],
@@ -387,7 +385,6 @@ def update_class_section(site_code, class_id, data):
             school_year = %s,
             number_of_student = %s,
             max_student = %s,
-            shift = %s,
             id_subject = %s,
             id_teacher = %s,
             id_headquarter = %s
@@ -398,7 +395,6 @@ def update_class_section(site_code, class_id, data):
             data.get("school_year"),
             data.get("number_of_student", 0),
             data["max_student"],
-            data.get("shift"),
             data["id_subject"],
             data["id_teacher"],
             data["id_headquarter"],
@@ -423,16 +419,20 @@ def get_schedules(site_code):
             lh.id,
             lh.id_class,
             hp.name_subject,
+            lh.study_date,
+            lh.week_number,
             lh.day_of_week,
             lh.start_period,
             lh.end_period,
+            lh.start_time,
+            lh.end_time,
             lh.id_room,
             ph.name_room
         FROM lichhoc lh
         JOIN lophocphan l ON l.id = lh.id_class
         JOIN hocphan hp ON hp.id = l.id_subject
         LEFT JOIN phonghoc ph ON ph.id = lh.id_room
-        ORDER BY lh.id_class, lh.day_of_week, lh.start_period;
+        ORDER BY lh.id_class, lh.study_date, lh.start_period;
         """,
     )
 
@@ -443,15 +443,22 @@ def add_schedule(site_code, data):
     return _write_sql(
         site_code,
         """
-        INSERT INTO lichhoc (id, id_class, day_of_week, start_period, end_period, id_room)
-        VALUES (%s, %s, %s, %s, %s, %s);
+        INSERT INTO lichhoc (
+            id, id_class, study_date, week_number, day_of_week,
+            start_period, end_period, start_time, end_time, id_room
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
         """,
         (
             data["id"],
             data["id_class"],
+            data["study_date"],
+            data.get("week_number"),
             data["day_of_week"],
             data["start_period"],
             data["end_period"],
+            data["start_time"],
+            data["end_time"],
             _empty_to_none(data.get("id_room")),
         ),
     )
@@ -464,14 +471,26 @@ def update_schedule(site_code, schedule_id, data):
         site_code,
         """
         UPDATE lichhoc
-        SET id_class = %s, day_of_week = %s, start_period = %s, end_period = %s, id_room = %s
+        SET id_class = %s,
+            study_date = %s,
+            week_number = %s,
+            day_of_week = %s,
+            start_period = %s,
+            end_period = %s,
+            start_time = %s,
+            end_time = %s,
+            id_room = %s
         WHERE id = %s;
         """,
         (
             data["id_class"],
+            data["study_date"],
+            data.get("week_number"),
             data["day_of_week"],
             data["start_period"],
             data["end_period"],
+            data["start_time"],
+            data["end_time"],
             _empty_to_none(data.get("id_room")),
             schedule_id,
         ),

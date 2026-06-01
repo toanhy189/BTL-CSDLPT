@@ -1,6 +1,6 @@
 """Router FastAPI cho nhóm nghiệp vụ giảng viên api, nhận request và chuyển xuống service phù hợp."""
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from backend.core.security import require_role
 from backend.db import queries
@@ -26,9 +26,16 @@ def class_students(class_id: str, current_user=Depends(require_role(["GIANG_VIEN
 
 # Xử lý bước nghiệp vụ lịch học trong module này.
 @router.get("/schedule")
-def schedule(current_user=Depends(require_role(["GIANG_VIEN"]))):
+def schedule(
+    current_user=Depends(require_role(["GIANG_VIEN"])),
+    semester: int | None = Query(None),
+    school_year: int | None = Query(None),
+    week_number: int | None = Query(None),
+):
     """Xử lý bước nghiệp vụ lịch học trong module này."""
-    return df_to_records(queries.get_teacher_schedule(current_user["ref_id"], current_user["id_headquarter"]))
+    return df_to_records(
+        queries.get_teacher_schedule(current_user["ref_id"], current_user["id_headquarter"], semester, school_year, week_number)
+    )
 
 
 # Xử lý bước nghiệp vụ statistics trong module này.

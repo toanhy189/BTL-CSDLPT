@@ -1,4 +1,4 @@
-"""Trang Streamlit cho nghiệp vụ trang mô phỏng đồng thời của quản trị viên, hiển thị dữ liệu và gửi thao tác của người dùng."""
+"""Admin concurrency simulation page."""
 
 import streamlit as st
 
@@ -9,9 +9,7 @@ from styles import SITE_LABELS, dataframe, metric_card, page_title, section_titl
 SITE_CODES = ["HL", "NT", "HD", "CG", "HCM"]
 
 
-# Hàm hỗ trợ chuẩn hóa/lọc/chuẩn bị dữ liệu parse sinh viên trước khi hiển thị hoặc xử lý.
 def _parse_students(raw_text):
-    """Hàm hỗ trợ chuẩn hóa/lọc/chuẩn bị dữ liệu parse sinh viên trước khi hiển thị hoặc xử lý."""
     students = []
     for line in raw_text.splitlines():
         if "," not in line:
@@ -22,49 +20,65 @@ def _parse_students(raw_text):
     return students
 
 
-# Vẽ màn hình/khối giao diện admin concurrency và gọi API hoặc service khi người dùng thao tác.
 def render_admin_concurrency(token):
-    """Vẽ màn hình/khối giao diện admin concurrency và gọi API hoặc service khi người dùng thao tác."""
-    page_title("Mô phỏng đồng thời", "Demo khóa dòng bằng SELECT ... FOR UPDATE.")
-    c1, c2, c3 = st.columns(3)
-    with c1:
+    page_title("Mô phỏng đăng ký đồng thời", "Nhiều sinh viên cùng đăng ký một lớp có số chỗ giới hạn.")
+
+    cols = st.columns([0.22, 0.28, 0.18, 0.16, 0.16])
+    with cols[0]:
         class_site = st.selectbox("Site mở lớp", SITE_CODES, format_func=lambda code: SITE_LABELS.get(code, code))
-    with c2:
+    with cols[1]:
         class_id = st.text_input("Mã lớp học phần", value="LHP-HL-TEST")
-    with c3:
-        max_student = st.number_input("So cho demo", min_value=1, value=1, step=1)
+    with cols[2]:
+        max_student = st.number_input("Số chỗ demo", min_value=1, value=1, step=1)
+    with cols[3]:
+        st.write("")
+        reset_clicked = st.button("Reset lớp test", use_container_width=True)
+    with cols[4]:
+        st.write("")
+        run_clicked = st.button("Chạy mô phỏng", use_container_width=True)
 
     raw = st.text_area(
-        "Danh sách sinh viên: MA_SV,SITE",
-        value="SV-HL-0001,HL\nSV-HL-0002,HL\nSV-HL-0003,HL",
-        height=120,
+        "Danh sách sinh viên tham gia mô phỏng, mỗi dòng theo mẫu MA_SV,SITE",
+        value="SV-HL-0001,HL\nSV-HL-0002,HL\nSV-HL-0003,HL\nSV-HL-0004,HL\nSV-HL-0005,HL",
+        height=130,
     )
-    if st.button("Reset lop test"):
+    students = _parse_students(raw)
+
+    if reset_clicked:
         reset_result = api_post(
             "/concurrency/reset-test-class",
             token=token,
             params={"class_site_code": class_site, "class_id": class_id, "max_student": max_student},
         )
         if reset_result.get("_error") or not reset_result.get("success"):
-            st.error(reset_result.get("message", "Reset that bai"))
+            st.error(reset_result.get("message", "Reset thất bại"))
         else:
-            st.success(reset_result.get("message", "Reset thanh cong"))
+            st.success(reset_result.get("message", "Reset thành công"))
 
-    if st.button("Chạy mô phỏng"):
+    if run_clicked:
         data = api_post(
             "/concurrency/simulate-registration",
             token=token,
-            json={"class_site_code": class_site, "class_id": class_id, "students": _parse_students(raw)},
+            json={"class_site_code": class_site, "class_id": class_id, "students": students},
         )
         rows = data.get("data", []) if not data.get("_error") else []
-        success_count = data.get("success_count", sum(1 for row in rows if row.get("success")))
-        fail_count = data.get("fail_count", len(rows) - success_count)
-        col1, col2 = st.columns(2)
-        with col1:
-            metric_card("Thành công", success_count, icon="✓", accent="green")
-        with col2:
-            metric_card("Thất bại", fail_count, icon="!", accent="red")
-        dataframe(rows)
+        success_count = int(data.get("success_count", sum(1 for row in rows if row.get("success"))))
+        fail_count = int(data.get("fail_count", len(rows) - success_count))
+        metric_cols = st.columns(4)
+        with metric_cols[0]:
+            metric_card("Tổng request", len(rows), red_value=True)
+        with metric_cols[1]:
+            metric_card("Thành công", success_count)
+        with metric_cols[2]:
+            metric_card("Thất bại", fail_count)
+        with metric_cols[3]:
+            metric_card("Số chỗ tối đa", max_student)
+        section_title("Kết quả từng transaction")
+        dataframe(rows, height=320)
+
+    section_title("Ghi chú demo")
+    st.info("Kết quả dùng để minh họa kiểm soát đồng thời khi nhiều sinh viên cùng đăng ký một lớp học phần.")
+
     section_title("Log gần nhất")
     logs = api_get("/concurrency/logs", token=token)
     st.code(logs.get("logs", "") if not logs.get("_error") else logs.get("message"))
