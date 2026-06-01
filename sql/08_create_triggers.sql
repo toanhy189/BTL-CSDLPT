@@ -7,6 +7,21 @@ RETURNS trigger AS $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
         IF NEW.status = 'DA_DANG_KY' THEN
+            IF NEW.ID_registration_period IS NULL THEN
+                RAISE EXCEPTION 'Dang ky phai gan voi dot dang ky';
+            END IF;
+
+            PERFORM 1
+            FROM LopHocPhan lhp
+            JOIN DotDangKy ddk ON ddk.ID = NEW.ID_registration_period
+            WHERE lhp.ID = NEW.ID_class
+              AND lhp.semester = ddk.semester
+              AND lhp.school_year = ddk.school_year;
+
+            IF NOT FOUND THEN
+                RAISE EXCEPTION 'Lop hoc phan khong thuoc dot dang ky';
+            END IF;
+
             UPDATE LopHocPhan
             SET number_of_student = number_of_student + 1
             WHERE ID = NEW.ID_class
@@ -22,6 +37,21 @@ BEGIN
 
     IF TG_OP = 'UPDATE' THEN
         IF OLD.status IS DISTINCT FROM 'DA_DANG_KY' AND NEW.status = 'DA_DANG_KY' THEN
+            IF NEW.ID_registration_period IS NULL THEN
+                RAISE EXCEPTION 'Dang ky phai gan voi dot dang ky';
+            END IF;
+
+            PERFORM 1
+            FROM LopHocPhan lhp
+            JOIN DotDangKy ddk ON ddk.ID = NEW.ID_registration_period
+            WHERE lhp.ID = NEW.ID_class
+              AND lhp.semester = ddk.semester
+              AND lhp.school_year = ddk.school_year;
+
+            IF NOT FOUND THEN
+                RAISE EXCEPTION 'Lop hoc phan khong thuoc dot dang ky';
+            END IF;
+
             UPDATE LopHocPhan
             SET number_of_student = number_of_student + 1
             WHERE ID = NEW.ID_class

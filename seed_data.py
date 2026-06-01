@@ -56,6 +56,64 @@ HOC_PHAN_DATA = [
     ("INT102", "Co so du lieu phan tan", 3, "CNTT"),
 ]
 
+CHUONG_TRINH_DAO_TAO_DATA = [
+    ("CNTT", "HP001", 1, True),
+    ("CNTT", "HP002", 2, True),
+    ("CNTT", "HP003", 2, True),
+    ("CNTT", "HP004", 3, True),
+    ("CNTT", "HP005", 3, True),
+    ("CNTT", "HP006", 3, True),
+    ("CNTT", "HP007", 2, True),
+    ("CNTT", "HP008", 4, True),
+    ("CNTT", "HP010", 5, False),
+    ("CNTT", "HP015", 4, True),
+    ("CNTT", "HP016", 5, False),
+    ("CNTT", "HP020", 6, False),
+    ("CNTT", "INT102", 6, True),
+    ("HTTT", "HP001", 1, True),
+    ("HTTT", "HP003", 2, True),
+    ("HTTT", "HP004", 3, True),
+    ("HTTT", "HP008", 4, False),
+    ("HTTT", "HP009", 4, True),
+    ("HTTT", "HP017", 5, False),
+    ("HTTT", "INT102", 6, True),
+    ("KHMT", "HP001", 1, True),
+    ("KHMT", "HP002", 2, True),
+    ("KHMT", "HP010", 4, True),
+    ("KHMT", "HP011", 5, True),
+    ("KHMT", "HP018", 5, False),
+    ("KHMT", "HP019", 6, False),
+    ("KHMT", "INT102", 6, True),
+    ("ATTT", "HP001", 1, True),
+    ("ATTT", "HP003", 2, True),
+    ("ATTT", "HP005", 3, True),
+    ("ATTT", "HP012", 4, True),
+    ("ATTT", "HP013", 5, True),
+    ("ATTT", "INT102", 6, False),
+    ("DTVT", "HP001", 1, True),
+    ("DTVT", "HP002", 2, True),
+    ("DTVT", "HP005", 3, True),
+    ("DTVT", "HP014", 3, True),
+    ("DTVT", "HP017", 5, False),
+    ("DTVT", "INT102", 6, False),
+]
+
+DOT_DANG_KY_DATA = [
+    (
+        f"DK-{dept}-{year}-HK2-2026",
+        2,
+        2026,
+        dept,
+        year,
+        "2026-01-01 00:00:00",
+        "2026-12-31 23:59:59",
+        True,
+        f"{dept} khoa {year} dang ky hoc ky 2 nam 2026",
+    )
+    for dept, _ in KHOA_DATA
+    for year in [2021, 2022, 2023, 2024]
+]
+
 PERIOD_TIME = {
     1: (time(7, 0), time(7, 50)),
     2: (time(8, 0), time(8, 50)),
@@ -204,6 +262,16 @@ def seed_replicated_data(conn):
         cursor,
         "INSERT INTO HocPhan (ID, name_subject, number_of_credit, ID_department) VALUES %s ON CONFLICT DO NOTHING",
         HOC_PHAN_DATA,
+    )
+    execute_values(
+        cursor,
+        "INSERT INTO ChuongTrinhDaoTao (ID_department, ID_subject, suggested_semester, is_required) VALUES %s ON CONFLICT DO NOTHING",
+        CHUONG_TRINH_DAO_TAO_DATA,
+    )
+    execute_values(
+        cursor,
+        "INSERT INTO DotDangKy (ID, semester, school_year, ID_department, admission_year, start_time, end_time, is_open, description) VALUES %s ON CONFLICT DO NOTHING",
+        DOT_DANG_KY_DATA,
     )
     conn.commit()
     cursor.close()

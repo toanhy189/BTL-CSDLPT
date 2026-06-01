@@ -15,7 +15,6 @@ router = APIRouter(prefix="/concurrency", tags=["concurrency"], dependencies=[De
 # Xử lý bước nghiệp vụ simulate trong module này.
 @router.post("/simulate-registration")
 def simulate(payload: ConcurrentRegistrationRequest):
-    """Xử lý bước nghiệp vụ simulate trong module này."""
     df = simulate_concurrent_registration(
         payload.class_site_code,
         payload.class_id,
@@ -41,7 +40,6 @@ def reset_test(
     class_id: str = Query("LHP-HL-TEST"),
     max_student: int = Query(1, ge=1),
 ):
-    """Reset lop test de demo dong thoi lap lai duoc trong Swagger hoac Streamlit."""
     success, message = reset_test_class(class_site_code, class_id, max_student)
     return {
         "success": success,
@@ -55,5 +53,4 @@ def reset_test(
 # Xử lý bước nghiệp vụ nhật ký trong module này.
 @router.get("/logs")
 def logs():
-    """Xử lý bước nghiệp vụ nhật ký trong module này."""
     return {"logs": read_logs(limit=300)}

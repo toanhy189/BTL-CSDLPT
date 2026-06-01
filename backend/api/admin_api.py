@@ -8,11 +8,14 @@ from backend.db.queries import df_to_records
 from backend.models.schemas import (
     ClassSectionCreate,
     CourseCreate,
+    RegistrationPeriodStatusUpdate,
     RegistrationStatusUpdate,
+    RegistrationPeriodCreate,
     RoomCreate,
     ScheduleCreate,
     StudentCreate,
     TeacherCreate,
+    TrainingProgramCreate,
 )
 from backend.services import management_service
 
@@ -23,14 +26,12 @@ router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(requir
 # Xử lý bước nghiệp vụ tổng quan trong module này.
 @router.get("/dashboard")
 def dashboard():
-    """Xử lý bước nghiệp vụ tổng quan trong module này."""
     return management_service.dashboard()
 
 
 # Xử lý bước nghiệp vụ trạng thái các site trong module này.
 @router.get("/sites/status")
 def sites_status():
-    """Xử lý bước nghiệp vụ trạng thái các site trong module này."""
     return management_service.sites_status()
 
 
@@ -49,14 +50,12 @@ def update_registration_status(payload: RegistrationStatusUpdate):
 # Xử lý bước nghiệp vụ sinh viên trong module này.
 @router.get("/students")
 def students(site_code: str = Query("HL")):
-    """Xử lý bước nghiệp vụ sinh viên trong module này."""
     return df_to_records(management_service.list_students(site_code))
 
 
 # Thêm mới dữ liệu sinh viên sau khi nhận thông tin từ form hoặc API.
 @router.post("/students")
 def add_student(payload: StudentCreate):
-    """Thêm mới dữ liệu sinh viên sau khi nhận thông tin từ form hoặc API."""
     success, message = management_service.add_student(payload.dict())
     return {"success": success, "message": message}
 
@@ -76,14 +75,12 @@ def delete_student(student_id: str, site_code: str = Query("HL")):
 # Xử lý bước nghiệp vụ giảng viên trong module này.
 @router.get("/teachers")
 def teachers(site_code: str = Query("HL")):
-    """Xử lý bước nghiệp vụ giảng viên trong module này."""
     return df_to_records(management_service.list_teachers(site_code))
 
 
 # Thêm mới dữ liệu giảng viên sau khi nhận thông tin từ form hoặc API.
 @router.post("/teachers")
 def add_teacher(payload: TeacherCreate):
-    """Thêm mới dữ liệu giảng viên sau khi nhận thông tin từ form hoặc API."""
     success, message = management_service.add_teacher(payload.dict())
     return {"success": success, "message": message}
 
@@ -103,14 +100,12 @@ def delete_teacher(teacher_id: str, site_code: str = Query("HL")):
 # Xử lý bước nghiệp vụ học phần trong module này.
 @router.get("/courses")
 def courses():
-    """Xử lý bước nghiệp vụ học phần trong module này."""
     return df_to_records(management_service.list_courses())
 
 
 # Thêm mới dữ liệu học phần sau khi nhận thông tin từ form hoặc API.
 @router.post("/courses")
 def add_course(payload: CourseCreate):
-    """Thêm mới dữ liệu học phần sau khi nhận thông tin từ form hoặc API."""
     success, message = management_service.add_course(payload.dict())
     return {"success": success, "message": message}
 
@@ -127,17 +122,67 @@ def delete_course(course_id: str):
     return {"success": success, "message": message}
 
 
+@router.get("/training-programs")
+def training_programs():
+    return df_to_records(management_service.list_training_programs())
+
+
+@router.post("/training-programs")
+def add_training_program(payload: TrainingProgramCreate):
+    success, message = management_service.add_training_program(payload.dict())
+    return {"success": success, "message": message}
+
+
+@router.put("/training-programs/{department_id}/{subject_id}")
+def update_training_program(department_id: str, subject_id: str, payload: TrainingProgramCreate):
+    success, message = management_service.update_training_program(department_id, subject_id, payload.dict())
+    return {"success": success, "message": message}
+
+
+@router.delete("/training-programs/{department_id}/{subject_id}")
+def delete_training_program(department_id: str, subject_id: str):
+    success, message = management_service.delete_training_program(department_id, subject_id)
+    return {"success": success, "message": message}
+
+
+@router.get("/registration-periods")
+def registration_periods():
+    return df_to_records(management_service.list_registration_periods())
+
+
+@router.post("/registration-periods")
+def add_registration_period(payload: RegistrationPeriodCreate):
+    success, message = management_service.add_registration_period(payload.dict())
+    return {"success": success, "message": message}
+
+
+@router.put("/registration-periods/{period_id}")
+def update_registration_period(period_id: str, payload: RegistrationPeriodCreate):
+    success, message = management_service.update_registration_period(period_id, payload.dict())
+    return {"success": success, "message": message}
+
+
+@router.patch("/registration-periods/{period_id}/status")
+def update_registration_period_status(period_id: str, payload: RegistrationPeriodStatusUpdate):
+    success, message = management_service.update_registration_period_status(period_id, payload.is_open)
+    return {"success": success, "message": message}
+
+
+@router.delete("/registration-periods/{period_id}")
+def delete_registration_period(period_id: str):
+    success, message = management_service.delete_registration_period(period_id)
+    return {"success": success, "message": message}
+
+
 # Xử lý bước nghiệp vụ lớp học phần trong module này.
 @router.get("/class-sections")
 def class_sections(site_code: str = Query("HL")):
-    """Xử lý bước nghiệp vụ lớp học phần trong module này."""
     return df_to_records(management_service.list_class_sections(site_code))
 
 
 # Thêm mới dữ liệu lớp học phần sau khi nhận thông tin từ form hoặc API.
 @router.post("/class-sections")
 def add_class_section(payload: ClassSectionCreate):
-    """Thêm mới dữ liệu lớp học phần sau khi nhận thông tin từ form hoặc API."""
     success, message = management_service.add_class_section(payload.dict())
     return {"success": success, "message": message}
 
@@ -157,14 +202,12 @@ def delete_class_section(class_id: str, site_code: str = Query("HL")):
 # Xử lý bước nghiệp vụ phòng học trong module này.
 @router.get("/rooms")
 def rooms(site_code: str = Query("HL")):
-    """Xử lý bước nghiệp vụ phòng học trong module này."""
     return df_to_records(management_service.list_rooms(site_code))
 
 
 # Thêm mới dữ liệu phòng học sau khi nhận thông tin từ form hoặc API.
 @router.post("/rooms")
 def add_room(payload: RoomCreate):
-    """Thêm mới dữ liệu phòng học sau khi nhận thông tin từ form hoặc API."""
     success, message = management_service.add_room(payload.dict())
     return {"success": success, "message": message}
 
@@ -184,14 +227,12 @@ def delete_room(room_id: str, site_code: str = Query("HL")):
 # Xử lý bước nghiệp vụ lịch học trong module này.
 @router.get("/schedules")
 def schedules(site_code: str = Query("HL")):
-    """Xử lý bước nghiệp vụ lịch học trong module này."""
     return df_to_records(management_service.list_schedules(site_code))
 
 
 # Thêm mới dữ liệu lịch học sau khi nhận thông tin từ form hoặc API.
 @router.post("/schedules")
 def add_schedule(payload: ScheduleCreate):
-    """Thêm mới dữ liệu lịch học sau khi nhận thông tin từ form hoặc API."""
     success, message = management_service.add_schedule(payload.dict())
     return {"success": success, "message": message}
 

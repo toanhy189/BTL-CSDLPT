@@ -8,6 +8,7 @@ from styles import SITE_LABELS, html_table, metric_card, page_title, section_tit
 
 
 def _with_site_names(rows):
+    rows = _rows(rows)
     if not isinstance(rows, list):
         return rows
     result = []
@@ -17,6 +18,21 @@ def _with_site_names(rows):
         item["site_name"] = SITE_LABELS.get(code, code)
         result.append(item)
     return result
+
+
+def _rows(response):
+    if isinstance(response, dict) and isinstance(response.get("data"), list):
+        return response["data"]
+    return response
+
+
+def _show_site_warning(response):
+    if not isinstance(response, dict):
+        return
+    failed_sites = response.get("failed_sites") or []
+    if failed_sites:
+        labels = ", ".join(SITE_LABELS.get(site, site) for site in failed_sites)
+        st.warning(response.get("warning") or f"Kết quả chưa bao gồm site: {labels}")
 
 
 def render_admin_dashboard(token):
@@ -31,6 +47,8 @@ def render_admin_dashboard(token):
     registration_status = api_get("/admin/registration-status", token=token)
     students_by_site = api_get("/distributed/students-by-site", token=token)
     fill_rate = api_get("/distributed/fill-rate", token=token)
+    _show_site_warning(students_by_site)
+    _show_site_warning(fill_rate)
 
     registration_open = True
     if isinstance(registration_status, dict) and not registration_status.get("_error"):
@@ -55,8 +73,9 @@ def render_admin_dashboard(token):
             st.rerun()
 
     avg_fill = 0
-    if isinstance(fill_rate, list) and fill_rate:
-        avg_fill = sum(float(row.get("ty_le_lap_day") or 0) for row in fill_rate) / len(fill_rate)
+    fill_rows = _rows(fill_rate)
+    if isinstance(fill_rows, list) and fill_rows:
+        avg_fill = sum(float(row.get("ty_le_lap_day") or 0) for row in fill_rows) / len(fill_rows)
 
     metric_cols = st.columns(5)
     metrics = [

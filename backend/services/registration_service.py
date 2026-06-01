@@ -28,6 +28,56 @@ def _get_class_metadata(cursor, class_id):
     return cursor.fetchone()
 
 
+def _get_student_info(student_id, student_headquarter):
+    conn = None
+    try:
+        conn = get_connection(student_headquarter)
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT id_department, year_of_admission
+                FROM sinhvien
+                WHERE id = %s;
+                """,
+                (student_id,),
+            )
+            return cursor.fetchone()
+    finally:
+        if conn:
+            conn.close()
+
+
+def _get_active_registration_period(cursor, student_department, admission_year, semester, school_year):
+    cursor.execute(
+        """
+        SELECT id, semester, school_year, id_department, admission_year, start_time, end_time, description
+        FROM dotdangky
+        WHERE id_department = %s
+          AND (admission_year IS NULL OR admission_year = %s)
+          AND semester = %s
+          AND school_year = %s
+          AND is_open = true
+          AND CURRENT_TIMESTAMP BETWEEN start_time AND end_time
+        ORDER BY admission_year NULLS LAST, start_time DESC
+        LIMIT 1;
+        """,
+        (student_department, admission_year, semester, school_year),
+    )
+    return cursor.fetchone()
+
+
+def _subject_in_training_program(cursor, student_department, subject_id):
+    cursor.execute(
+        """
+        SELECT 1
+        FROM chuongtrinhdaotao
+        WHERE id_department = %s AND id_subject = %s;
+        """,
+        (student_department, subject_id),
+    )
+    return cursor.fetchone() is not None
+
+
 def _find_active_classes_for_same_subject(cursor, student_id, target_class):
     cursor.execute(
         """
@@ -153,6 +203,7 @@ def _find_schedule_conflict(student_id, class_site_code, current_cursor, class_i
                 if conflict:
                     return {"conflict": conflict, "site_code": site_code}
         except Exception as exc:
+            write_log(f"SITE_DOWN site={site_code} action=KIEM_TRA_TRUNG_LICH student={student_id} class={class_id} error={exc}")
             return {"error": f"Khong kiem tra duoc lich hoc tai site {site_code}: {exc}"}
         finally:
             if conn:
@@ -160,7 +211,7 @@ def _find_schedule_conflict(student_id, class_site_code, current_cursor, class_i
     return None
 
 
-def _activate_registration(cursor, student_id, student_headquarter, class_id):
+def _activate_registration(cursor, student_id, student_headquarter, class_id, registration_period_id):
     cursor.execute(
         """
         SELECT status
@@ -176,19 +227,20 @@ def _activate_registration(cursor, student_id, student_headquarter, class_id):
             """
             UPDATE dangky
             SET id_student_headquarter = %s,
+                id_registration_period = %s,
                 registration_date = CURRENT_TIMESTAMP,
                 status = 'DA_DANG_KY'
             WHERE id_student = %s AND id_class = %s;
             """,
-            (student_headquarter, student_id, class_id),
+            (student_headquarter, registration_period_id, student_id, class_id),
         )
     else:
         cursor.execute(
             """
-            INSERT INTO dangky (id_student, id_student_headquarter, id_class, status)
-            VALUES (%s, %s, %s, 'DA_DANG_KY');
+            INSERT INTO dangky (id_student, id_student_headquarter, id_class, id_registration_period, status)
+            VALUES (%s, %s, %s, %s, 'DA_DANG_KY');
             """,
-            (student_id, student_headquarter, class_id),
+            (student_id, student_headquarter, class_id, registration_period_id),
         )
 
 
@@ -201,6 +253,7 @@ def find_student_site(student_id, student_headquarter):
             cursor.execute("SELECT 1 FROM sinhvien WHERE id = %s;", (student_id,))
             return cursor.fetchone() is not None, "Sinh vien hop le"
     except Exception as exc:
+        write_log(f"SITE_DOWN site={student_headquarter} action=KIEM_TRA_SINH_VIEN student={student_id} error={exc}")
         return False, str(exc)
     finally:
         if conn:
@@ -215,6 +268,10 @@ def register_course(student_id, student_headquarter, class_site_code, class_id):
     student_ok, student_message = find_student_site(student_id, student_headquarter)
     if not student_ok:
         return False, f"Khong tim thay sinh vien tai site {student_headquarter}: {student_message}"
+    student_info = _get_student_info(student_id, student_headquarter)
+    if not student_info:
+        return False, "Khong lay duoc thong tin sinh vien"
+    student_department, admission_year = student_info
 
     conn = None
     old_class_id = None
@@ -228,6 +285,22 @@ def register_course(student_id, student_headquarter, class_site_code, class_id):
             if target_class is None:
                 conn.rollback()
                 return False, "Khong tim thay lop hoc phan"
+
+            registration_period = _get_active_registration_period(
+                cursor,
+                student_department,
+                admission_year,
+                target_class[1],
+                target_class[2],
+            )
+            if not registration_period:
+                conn.rollback()
+                return False, "Hien tai chua co dot dang ky hop le cho khoa/khoa hoc cua sinh vien"
+            registration_period_id = registration_period[0]
+
+            if not _subject_in_training_program(cursor, student_department, target_class[3]):
+                conn.rollback()
+                return False, "Hoc phan khong nam trong chuong trinh dao tao cua sinh vien"
 
             cursor.execute(
                 "SELECT pg_advisory_xact_lock(hashtext(%s));",
@@ -253,6 +326,9 @@ def register_course(student_id, student_headquarter, class_site_code, class_id):
                 return False, "Khong tim thay du lop hoc phan lien quan"
 
             target_class = locked_classes[class_id]
+            if target_class[1] != registration_period[1] or target_class[2] != registration_period[2]:
+                conn.rollback()
+                return False, "Lop hoc phan khong thuoc dot dang ky hien tai"
             number_of_student, max_student = target_class[4], target_class[5]
             if number_of_student >= max_student:
                 conn.rollback()
@@ -298,9 +374,9 @@ def register_course(student_id, student_headquarter, class_site_code, class_id):
                     """,
                     (student_id, old_class_id),
                 )
-                _activate_registration(cursor, student_id, student_headquarter, class_id)
+                _activate_registration(cursor, student_id, student_headquarter, class_id, registration_period_id)
             else:
-                _activate_registration(cursor, student_id, student_headquarter, class_id)
+                _activate_registration(cursor, student_id, student_headquarter, class_id, registration_period_id)
 
         conn.commit()
         if old_class_id:
@@ -315,6 +391,9 @@ def register_course(student_id, student_headquarter, class_site_code, class_id):
     except Exception as exc:
         if conn:
             conn.rollback()
+        if conn is None:
+            write_log(f"SITE_DOWN site={class_site_code} action=DANG_KY student={student_id} class={class_id} error={exc}")
+            return False, f"Khong the ket noi site {class_site_code}, giao dich dang ky bi huy de dam bao nhat quan du lieu"
         write_log(f"DANG_KY site={class_site_code} class={class_id} student={student_id} success=False error={exc}")
         return False, str(exc)
     finally:
@@ -345,9 +424,11 @@ def cancel_registration(student_id, class_site_code, class_id):
 
             cursor.execute(
                 """
-                SELECT status
-                FROM dangky
-                WHERE id_student = %s AND id_class = %s
+                SELECT d.status, ddk.is_open,
+                       CURRENT_TIMESTAMP BETWEEN ddk.start_time AND ddk.end_time AS period_active
+                FROM dangky d
+                JOIN dotdangky ddk ON ddk.id = d.id_registration_period
+                WHERE d.id_student = %s AND d.id_class = %s
                 FOR UPDATE;
                 """,
                 (student_id, class_id),
@@ -359,6 +440,9 @@ def cancel_registration(student_id, class_site_code, class_id):
             if row[0] == "DA_HUY":
                 conn.rollback()
                 return False, "Dang ky da duoc huy truoc do"
+            if not row[1] or not row[2]:
+                conn.rollback()
+                return False, "Dot dang ky da dong, khong the huy dang ky"
 
             cursor.execute(
                 "UPDATE dangky SET status = 'DA_HUY' WHERE id_student = %s AND id_class = %s;",
@@ -371,6 +455,9 @@ def cancel_registration(student_id, class_site_code, class_id):
     except Exception as exc:
         if conn:
             conn.rollback()
+        if conn is None:
+            write_log(f"SITE_DOWN site={class_site_code} action=HUY_DANG_KY student={student_id} class={class_id} error={exc}")
+            return False, f"Khong the ket noi site {class_site_code}, giao dich huy dang ky bi huy de dam bao nhat quan du lieu"
         return False, str(exc)
     finally:
         if conn:

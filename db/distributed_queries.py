@@ -53,7 +53,6 @@ def _concat_frames(frames):
 
 # Chạy cùng một truy vấn trên toàn bộ site rồi gom kết quả.
 def _read_all_sites_query(query, params=None):
-    """Chạy cùng một truy vấn trên toàn bộ site rồi gom kết quả."""
     frames = []
     for site_code in SITE_CODES:
         df = read_query(site_code, query, params)

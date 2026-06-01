@@ -36,6 +36,7 @@ QUERIES = {
 
 
 def _site_names(rows):
+    rows = _rows(rows)
     if not isinstance(rows, list):
         return rows
     result = []
@@ -48,9 +49,25 @@ def _site_names(rows):
 
 
 def _avg_fill(rows):
+    rows = _rows(rows)
     if not isinstance(rows, list) or not rows:
         return 0
     return sum(float(row.get("ty_le_lap_day") or 0) for row in rows) / len(rows)
+
+
+def _rows(response):
+    if isinstance(response, dict) and isinstance(response.get("data"), list):
+        return response["data"]
+    return response
+
+
+def _show_site_warning(response):
+    if not isinstance(response, dict):
+        return
+    failed_sites = response.get("failed_sites") or []
+    if failed_sites:
+        labels = ", ".join(SITE_LABELS.get(site, site) for site in failed_sites)
+        st.warning(response.get("warning") or f"Kết quả chưa bao gồm site: {labels}")
 
 
 def render_admin_distributed_query(token):
@@ -61,6 +78,8 @@ def render_admin_distributed_query(token):
     students = api_get("/distributed/students-by-site", token=token)
     cross_site = api_get("/distributed/cross-site-students", token=token)
     fill_rate = api_get("/distributed/fill-rate", token=token)
+    for response in [registrations, classes, students, cross_site, fill_rate]:
+        _show_site_warning(response)
 
     metric_cols = st.columns(5)
     with metric_cols[0]:
@@ -78,6 +97,7 @@ def render_admin_distributed_query(token):
     st.info(QUERIES[selected]["desc"])
     result = api_get(QUERIES[selected]["path"], token=token)
     section_title(f"Kết quả: {selected}")
+    _show_site_warning(result)
     dataframe(result, height=360)
 
     left, right = st.columns([0.48, 0.52], gap="medium")
@@ -91,8 +111,10 @@ def render_admin_distributed_query(token):
             st.info("Không có dữ liệu đăng ký.")
     with right:
         section_title("Top học phần")
+        top_courses = api_get("/distributed/top-courses", token=token)
+        _show_site_warning(top_courses)
         html_table(
-            api_get("/distributed/top-courses", token=token),
+            top_courses,
             [
                 ("id_subject", "Mã học phần"),
                 ("name_subject", "Tên học phần"),

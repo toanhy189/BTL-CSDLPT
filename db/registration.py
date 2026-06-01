@@ -6,7 +6,6 @@ from db.logs import write_log
 
 # Đăng ký học phần: kiểm tra sinh viên, khóa lớp, ghi hoặc kích hoạt lại đăng ký, tăng sĩ số và ghi log.
 def register_course(site_code, student_id, course_id):
-    """Đăng ký học phần: kiểm tra sinh viên, khóa lớp, ghi hoặc kích hoạt lại đăng ký, tăng sĩ số và ghi log."""
     sql = """
         INSERT INTO registrations (student_id, course_id)
         VALUES (%s, %s)
