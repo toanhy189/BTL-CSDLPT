@@ -1,19 +1,26 @@
 # Hệ thống đăng ký học phần nhiều cơ sở
 
-Đồ án Cơ sở dữ liệu phân tán mô phỏng hệ thống đăng ký học phần cho trường đại học có nhiều cơ sở đào tạo. Mỗi cơ sở có một PostgreSQL site riêng để quản lý dữ liệu cục bộ, đồng thời các danh mục dùng chung toàn trường được nhân bản trên các site.
+Đồ án Cơ sở dữ liệu phân tán mô phỏng hệ thống đăng ký học phần cho trường đại học có nhiều cơ sở đào tạo. Mỗi cơ sở có một PostgreSQL site riêng để quản lý dữ liệu cục bộ. Các danh mục dùng chung toàn trường được nhân bản để các site có thể xử lý nghiệp vụ độc lập hơn.
 
-## 1. Kiến trúc
+## 1. Kiến trúc tổng quan
 
 ```text
 Streamlit Frontend -> FastAPI Backend -> psycopg2/pandas -> 5 PostgreSQL site
 ```
 
-- Frontend: `frontend/streamlit_app`
-- Backend API: `backend`
-- Database: 5 PostgreSQL container
-- Xác thực: JWT
-- Mật khẩu tài khoản: bcrypt
-- Phân quyền: `ADMIN`, `GIANG_VIEN`, `SINH_VIEN`
+Thành phần chính:
+
+- `frontend/streamlit_app`: giao diện Streamlit.
+- `backend`: FastAPI backend.
+- `sql`: script tạo schema, trigger và replication.
+- `seed_data.py`: sinh dữ liệu mẫu.
+- `docker-compose.yml`: cấu hình 5 PostgreSQL container.
+
+Vai trò người dùng:
+
+- `ADMIN`: quản trị hệ thống.
+- `SINH_VIEN`: đăng ký/hủy học phần, xem lịch học.
+- `GIANG_VIEN`: xem lớp phụ trách, danh sách sinh viên và lịch dạy.
 
 ## 2. Công nghệ sử dụng
 
@@ -40,7 +47,7 @@ Streamlit Frontend -> FastAPI Backend -> psycopg2/pandas -> 5 PostgreSQL site
 
 ## 4. Mô hình dữ liệu phân tán
 
-Project sử dụng phân mảnh ngang theo địa điểm/cơ sở.
+Project sử dụng **phân mảnh ngang theo cơ sở/site**.
 
 Dữ liệu cục bộ theo từng cơ sở:
 
@@ -59,12 +66,12 @@ Dữ liệu dùng chung, được nhân bản trên các site:
 - `ChuongTrinhDaoTao`
 - `DotDangKy`
 
-Ý nghĩa:
+Nguyên tắc lưu dữ liệu:
 
 - Sinh viên, giảng viên, phòng học, lớp học phần và lịch học thuộc cơ sở nào thì lưu tại site cơ sở đó.
-- Bản ghi đăng ký được lưu tại site mở lớp học phần.
+- Bản ghi đăng ký học phần được lưu tại site mở lớp học phần.
 - Nếu sinh viên ở cơ sở này đăng ký lớp mở tại cơ sở khác thì đó là đăng ký chéo cơ sở.
-- Danh mục học phần, chương trình đào tạo và đợt đăng ký được nhân bản để các site có thể xử lý nghiệp vụ độc lập hơn.
+- Dữ liệu dùng chung được nhân bản để giảm truy vấn liên site khi xử lý nghiệp vụ.
 
 ## 5. Lược đồ chính
 
@@ -81,6 +88,7 @@ Các bảng nghiệp vụ chính:
 - `LopHocPhan`: lớp học phần được mở.
 - `LichHoc`: lịch học theo ngày, tuần, tiết, giờ và phòng.
 - `DangKy`: bản ghi đăng ký học phần.
+- `OfflineOperationLog`: yêu cầu đăng ký/hủy đăng ký bị gián đoạn do site mất kết nối.
 
 Bảng `DangKy` liên kết với `DotDangKy` qua `ID_registration_period`, giúp xác định mỗi bản ghi đăng ký thuộc đợt đăng ký nào.
 
@@ -99,20 +107,35 @@ docker compose up -d
 docker compose ps
 ```
 
-## 8. Tạo schema và dữ liệu mẫu
+## 8. Setup database tự động
 
 Chạy trong thư mục `BTL-CSDLPT`:
 
 ```powershell
-.\run_sql.bat
-python seed_data.py
+.\setup_all.bat
 ```
 
-`run_sql.bat` tạo lại schema trên 5 site và nạp trigger. `seed_data.py` sinh dữ liệu mẫu gồm cơ sở, khoa, học phần, chương trình đào tạo, đợt đăng ký, sinh viên, giảng viên, phòng học, lớp học phần và lịch học.
+Script này tự khởi động Docker, chờ 5 PostgreSQL site sẵn sàng, tạo schema/trigger, sinh dữ liệu mẫu và cấu hình logical replication cho các bảng dùng chung từ `site_hadong` sang các site còn lại.
 
-Lưu ý: lệnh `run_sql.bat` drop/create lại bảng. Nếu đã cấu hình logical replication thủ công trong pgAdmin thì cần cấu hình lại sau khi reset schema.
+## 9. Setup database thủ công
 
-## 9. Chạy backend FastAPI
+Nếu muốn chạy từng bước:
+
+```powershell
+.\run_sql.bat
+python seed_data.py
+.\setup_replication.bat
+```
+
+Ý nghĩa:
+
+- `run_sql.bat`: tạo lại schema và trigger trên 5 site.
+- `seed_data.py`: sinh dữ liệu mẫu.
+- `setup_replication.bat`: tạo role `replicator`, publication `pub_common_data` trên `site_hadong` và subscription sang các site còn lại.
+
+Lưu ý: `run_sql.bat` drop/create lại bảng, nên dữ liệu hiện tại sẽ mất.
+
+## 10. Chạy backend FastAPI
 
 ```powershell
 uvicorn backend.main:app --reload --port 8000
@@ -125,9 +148,9 @@ http://localhost:8000/health
 http://localhost:8000/docs
 ```
 
-Khi backend khởi động, hệ thống tự tạo bảng `taikhoan` nếu chưa có và seed tài khoản demo.
+Khi backend khởi động, hệ thống tự tạo bảng `taikhoan` nếu chưa có. Bảng `offlineoperationlog` cũng được tự tạo tại site điều phối `HD` nếu chưa tồn tại.
 
-## 10. Chạy frontend Streamlit
+## 11. Chạy frontend Streamlit
 
 Mở terminal khác, vẫn trong thư mục `BTL-CSDLPT`:
 
@@ -141,7 +164,7 @@ Frontend mặc định chạy tại:
 http://localhost:8501
 ```
 
-## 11. Tài khoản demo
+## 12. Tài khoản demo
 
 | Vai trò | Username | Password | Ghi chú |
 | --- | --- | --- | --- |
@@ -149,24 +172,18 @@ http://localhost:8501
 | SINH_VIEN | mã sinh viên viết thường | `123456` | Ví dụ `sv-hl-0001` nếu có sinh viên `SV-HL-0001` |
 | GIANG_VIEN | mã giảng viên viết thường | `123456` | Ví dụ `gv-hl-0001` nếu có giảng viên `GV-HL-0001` |
 
-## 12. Chức năng theo vai trò
+## 13. Chức năng theo vai trò
 
 ### ADMIN
 
 - Xem tổng quan hệ thống.
 - Xem trạng thái kết nối 5 site.
-- Quản lý sinh viên.
-- Quản lý giảng viên.
-- Quản lý học phần.
-- Quản lý chương trình đào tạo.
-- Quản lý đợt đăng ký.
-- Quản lý lớp học phần.
-- Quản lý phòng học.
-- Quản lý lịch học.
+- Quản lý sinh viên, giảng viên, học phần, chương trình đào tạo, đợt đăng ký, lớp học phần, phòng học và lịch học.
 - Mở/đóng đăng ký học phần.
 - Chạy truy vấn phân tán.
 - Mô phỏng đăng ký đồng thời.
 - Xem nhật ký thao tác.
+- Xem và xử lý yêu cầu chờ khi site mất kết nối.
 
 ### SINH_VIEN
 
@@ -182,7 +199,7 @@ http://localhost:8501
 - Xem danh sách sinh viên theo lớp.
 - Xem lịch dạy theo tuần.
 
-## 13. Xử lý đăng ký học phần
+## 14. Luồng xử lý đăng ký học phần
 
 Khi sinh viên đăng ký một lớp học phần, backend thực hiện:
 
@@ -200,40 +217,25 @@ Khi sinh viên đăng ký một lớp học phần, backend thực hiện:
 12. Trigger tự động cập nhật sĩ số.
 13. Commit nếu thành công, rollback nếu có lỗi.
 
-## 14. Kiểm soát đồng thời
+File xử lý chính:
+
+```text
+backend/services/registration_service.py
+```
+
+## 15. Kiểm soát đồng thời và phòng tránh deadlock
 
 Project xử lý đăng ký đồng thời bằng:
 
 - Transaction.
 - `SELECT ... FOR UPDATE` để khóa dòng lớp học phần.
-- Advisory lock theo sinh viên và học phần.
+- `pg_advisory_xact_lock()` để khóa logic theo sinh viên và học phần.
+- Khóa các lớp liên quan theo thứ tự cố định khi đổi lớp.
 - Trigger đồng bộ sĩ số.
 - Atomic update để không vượt quá sĩ số tối đa.
 - Rollback khi lớp đầy hoặc có lỗi.
 
-Tình huống demo:
-
-- Một lớp học phần có số chỗ giới hạn.
-- Nhiều sinh viên cùng đăng ký lớp đó tại cùng thời điểm.
-- Hệ thống đảm bảo chỉ số lượng sinh viên hợp lệ được đăng ký, sĩ số không vượt `max_student`.
-
-## 15. Trigger
-
-File trigger:
-
-```text
-sql/08_create_triggers.sql
-```
-
-Trigger trên bảng `DangKy` dùng để:
-
-- Tăng `LopHocPhan.number_of_student` khi đăng ký thành công.
-- Giảm `LopHocPhan.number_of_student` khi hủy đăng ký.
-- Chặn đăng ký nếu lớp đã đầy.
-- Kiểm tra đăng ký phải gắn với `DotDangKy`.
-- Kiểm tra lớp học phần thuộc đúng học kỳ/năm học của đợt đăng ký.
-
-Trigger sử dụng atomic update:
+Trigger tăng sĩ số dùng atomic update:
 
 ```sql
 UPDATE LopHocPhan
@@ -242,26 +244,25 @@ WHERE ID = NEW.ID_class
   AND number_of_student < max_student;
 ```
 
-Cách này giúp tránh lỗi nhiều transaction cùng đọc thấy còn chỗ rồi cùng tăng sĩ số vượt giới hạn.
+File trigger:
 
-## 16. Phòng tránh deadlock khi đổi lớp
+```text
+sql/08_create_triggers.sql
+```
 
-Project xử lý tình huống sinh viên đổi lớp học phần cùng môn.
+Demo đổi lớp chéo để minh họa phòng tránh deadlock:
 
-Ví dụ:
+```text
+demo_swap_deadlock_solution.py
+```
+
+Tình huống demo:
 
 - Sinh viên A đổi từ lớp 1 sang lớp 2.
 - Sinh viên B đổi từ lớp 2 sang lớp 1.
+- Hệ thống khóa các lớp theo thứ tự cố định để không tạo vòng chờ.
 
-Nếu mỗi transaction khóa lớp cũ trước rồi lớp mới sau thì có thể xảy ra deadlock. Project xử lý bằng cách:
-
-- Gom các lớp liên quan.
-- Sắp xếp mã lớp theo thứ tự cố định.
-- Khóa các lớp theo cùng thứ tự bằng `SELECT ... FOR UPDATE`.
-
-Nhờ đó các transaction không tạo vòng chờ.
-
-## 17. Truy vấn phân tán
+## 16. Truy vấn phân tán
 
 Các truy vấn phân tán được thực hiện bằng cách backend kết nối đến từng site, lấy dữ liệu cục bộ rồi tổng hợp kết quả toàn trường bằng pandas/logic ứng dụng.
 
@@ -271,11 +272,18 @@ Các truy vấn chính:
 - Tìm học phần có nhiều sinh viên đăng ký nhất toàn trường.
 - Danh sách sinh viên đăng ký chéo cơ sở.
 - Tỷ lệ lấp đầy của các lớp học phần trên toàn hệ thống.
-- Thống kê số lớp học phần mở theo cơ sở hoặc theo khoa.
+- Thống kê số lớp học phần mở theo cơ sở.
 - Thống kê số sinh viên theo cơ sở.
 - Danh sách lớp học phần toàn trường.
 
-## 18. Replication dữ liệu dùng chung
+File liên quan:
+
+```text
+backend/db/distributed_queries.py
+backend/api/distributed_query_api.py
+```
+
+## 17. Replication dữ liệu dùng chung
 
 Docker đã bật các tham số phục vụ logical replication:
 
@@ -283,7 +291,13 @@ Docker đã bật các tham số phục vụ logical replication:
 - `max_replication_slots=10`
 - `max_wal_senders=10`
 
-Trong dữ liệu mẫu, các bảng dùng chung được nhân bản bằng script seed vào 5 site:
+Logical replication được cấu hình bằng:
+
+```text
+setup_replication.bat
+```
+
+Site `site_hadong` là publisher/source cho các bảng dùng chung:
 
 - `CoSo`
 - `Khoa`
@@ -291,11 +305,64 @@ Trong dữ liệu mẫu, các bảng dùng chung được nhân bản bằng scr
 - `ChuongTrinhDaoTao`
 - `DotDangKy`
 
-Đã demo logical replication thật, có thể cấu hình publication/subscription trong PostgreSQL hoặc pgAdmin cho các bảng dùng chung.
+Các site `site_hoalac`, `site_ngoctruc`, `site_caugiay`, `site_hcm` là subscriber/replica.
+
+Project không replication bảng `DangKy` làm dữ liệu ghi chính, vì đây là bảng giao dịch có tần suất thay đổi cao, dễ phát sinh conflict và sai lệch sĩ số nếu nhiều site cùng ghi.
+
+## 18. Xử lý khi một site tạm thời mất kết nối
+
+Project bổ sung cơ chế ghi nhận yêu cầu bị gián đoạn bằng bảng:
+
+```text
+OfflineOperationLog
+```
+
+Bảng này được lưu tại site điều phối `HD`.
+
+Khi đăng ký hoặc hủy đăng ký gặp lỗi do site mất kết nối:
+
+1. Hệ thống không ghi tạm vào `DangKy`.
+2. Rollback transaction nếu có.
+3. Lưu yêu cầu vào `OfflineOperationLog`.
+4. Gán trạng thái `PENDING`.
+5. Admin xử lý lại khi site online.
+
+Các trạng thái:
+
+| Trạng thái | Ý nghĩa |
+| --- | --- |
+| `PENDING` | Chờ xử lý lại |
+| `RETRYING` | Đang thử xử lý lại |
+| `DONE` | Xử lý thành công |
+| `FAILED` | Xử lý thất bại |
+| `CANCELLED` | Admin hủy yêu cầu |
+
+Giao diện admin có mục **Yêu cầu chờ xử lý**:
+
+- Xem danh sách yêu cầu chờ.
+- Thử lại một yêu cầu.
+- Hủy một yêu cầu.
+- Xử lý tất cả các yêu cầu có thể thử lại.
+
+Khi xử lý lại, hệ thống gọi lại logic nghiệp vụ thật (`register_course` hoặc `cancel_registration`), nên vẫn kiểm tra lại đầy đủ:
+
+- Đợt đăng ký còn mở không.
+- Lớp còn chỗ không.
+- Có trùng lịch không.
+- Sinh viên đã đăng ký lớp đó chưa.
+- Site đã kết nối lại chưa.
+
+File liên quan:
+
+```text
+backend/services/offline_operation_service.py
+backend/api/admin_api.py
+frontend/streamlit_app/ui_pages/admin/admin_offline_operations_page.py
+```
 
 ## 19. Kết nối pgAdmin
 
-Trong pgAdmin, register thủ công 5 server:
+Register thủ công 5 server:
 
 | Name | Host | Port | Maintenance database |
 | --- | --- | --- | --- |
@@ -305,7 +372,7 @@ Trong pgAdmin, register thủ công 5 server:
 | `site_caugiay` | `localhost` | `5443` | `site_caugiay` |
 | `site_hcm` | `localhost` | `5444` | `site_hcm` |
 
-Thông tin đăng nhập PostgreSQL mặc định nằm trong `docker-compose.yml`.
+Thông tin đăng nhập PostgreSQL nằm trong `docker-compose.yml`.
 
 ## 20. Dừng và reset hệ thống
 
@@ -319,21 +386,24 @@ Reset sạch database:
 
 ```powershell
 docker compose down -v
-docker compose up -d
-.\run_sql.bat
-python seed_data.py
+.\setup_all.bat
 ```
 
-Sau đó chạy lại backend để tạo/seed bảng `taikhoan`.
+Sau đó chạy lại backend để tạo/seed bảng `taikhoan` nếu cần.
 
 ## 21. Các file quan trọng
 
-- `docker-compose.yml`: cấu hình 5 PostgreSQL site.
-- `sql/01_create_tables.sql`: schema toàn cục.
-- `sql/08_create_triggers.sql`: trigger đồng bộ sĩ số.
-- `run_sql.bat`: tạo schema và trigger trên 5 site.
-- `seed_data.py`: sinh dữ liệu mẫu.
-- `backend/services/registration_service.py`: xử lý đăng ký, hủy, đồng thời và đổi lớp.
-- `backend/db/queries.py`: truy vấn quản trị và truy vấn phân tán.
-- `frontend/streamlit_app/app.py`: giao diện Streamlit.
+| File | Vai trò |
+| --- | --- |
+| `docker-compose.yml` | Cấu hình 5 PostgreSQL site |
+| `sql/01_create_tables.sql` | Schema toàn cục |
+| `sql/08_create_triggers.sql` | Trigger đồng bộ sĩ số |
+| `run_sql.bat` | Tạo schema và trigger trên 5 site |
+| `setup_all.bat` | Setup database, dữ liệu mẫu và replication bằng một lệnh |
+| `setup_replication.bat` | Tạo publication/subscription cho dữ liệu dùng chung |
+| `seed_data.py` | Sinh dữ liệu mẫu |
+| `backend/services/registration_service.py` | Xử lý đăng ký, hủy, đồng thời và đổi lớp |
+| `backend/services/offline_operation_service.py` | Lưu và xử lý lại yêu cầu khi site mất kết nối |
+| `backend/db/distributed_queries.py` | Truy vấn phân tán |
+| `frontend/streamlit_app/app.py` | Router giao diện Streamlit |
 

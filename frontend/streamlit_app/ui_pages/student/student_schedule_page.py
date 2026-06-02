@@ -1,4 +1,4 @@
-"""Student weekly schedule page."""
+"""Trang thời khóa biểu theo tuần của sinh viên."""
 
 import pandas as pd
 import streamlit as st

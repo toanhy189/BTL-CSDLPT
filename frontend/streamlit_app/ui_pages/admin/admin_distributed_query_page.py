@@ -1,4 +1,4 @@
-"""Admin distributed query page."""
+"""Trang quản trị truy vấn phân tán."""
 
 import pandas as pd
 import streamlit as st

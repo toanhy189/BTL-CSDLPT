@@ -1,4 +1,4 @@
-"""Router FastAPI cho nhóm nghiệp vụ giảng viên api, nhận request và chuyển xuống service phù hợp."""
+"""Bộ định tuyến FastAPI cho nhóm nghiệp vụ giảng viên, nhận yêu cầu và chuyển xuống service phù hợp."""
 
 from fastapi import APIRouter, Depends, Query
 

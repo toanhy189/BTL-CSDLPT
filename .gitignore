@@ -3,7 +3,6 @@ __pycache__/
 .venv/
 venv/
 .env
-/Bài Tập Lớn.pdf
 extract_pdf.py
 pdf_content.txt
 streamlit*.log

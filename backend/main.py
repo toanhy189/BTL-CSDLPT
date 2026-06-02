@@ -1,4 +1,4 @@
-"""Điểm khởi động FastAPI, cấu hình CORS, khởi tạo xác thực và gắn các router nghiệp vụ."""
+"""Điểm khởi động FastAPI, cấu hình CORS, khởi tạo xác thực và gắn các bộ định tuyến nghiệp vụ."""
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,6 +13,7 @@ from backend.api import (
     teacher_api,
 )
 from backend.services.auth_service import ensure_auth_schema
+from backend.services.offline_operation_service import ensure_offline_operation_schema
 
 
 app = FastAPI(title="CSDL phân tán - Đăng ký học phần API")
@@ -36,6 +37,7 @@ app.add_middleware(
 @app.on_event("startup")
 def on_startup():
     ensure_auth_schema()
+    ensure_offline_operation_schema()
 
 
 # Endpoint kiểm tra nhanh backend còn phản hồi.

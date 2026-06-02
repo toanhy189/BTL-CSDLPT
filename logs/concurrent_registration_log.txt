@@ -19,3 +19,24 @@ Concurrent registration log.
 [2026-05-31 23:56:10] DANG_KY site=HL class=LHP-HL-030 student=SV-HL-0001 success=True
 [2026-06-01 17:38:36] DANG_KY site=HD class=LHP-HD-019 student=SV-HL-0001 success=True
 [2026-06-01 17:41:20] DANG_KY site=HL class=LHP-HL-TEST student=SV-HL-0001 success=True
+[2026-06-02 16:34:03] RESET_LOP_TEST site=HL class=LHP-HL-TEST max_student=1
+[2026-06-02 16:56:43] DOI_LOP site=HL old_class=LHP-HL-SWAP-A new_class=LHP-HL-SWAP-B student=SV-HL-0013 success=True
+[2026-06-02 16:56:43] DOI_LOP site=HL old_class=LHP-HL-SWAP-B new_class=LHP-HL-SWAP-A student=SV-HL-0025 success=True
+[2026-06-02 17:03:58] DOI_LOP site=HL old_class=LHP-HL-SWAP-A new_class=LHP-HL-SWAP-B student=SV-HL-0013 success=True
+[2026-06-02 17:03:58] DOI_LOP site=HL old_class=LHP-HL-SWAP-B new_class=LHP-HL-SWAP-A student=SV-HL-0025 success=True
+[2026-06-02 17:05:04] DOI_LOP site=HL old_class=LHP-HL-SWAP-B new_class=LHP-HL-SWAP-A student=SV-HL-0025 success=True
+[2026-06-02 17:05:04] DOI_LOP site=HL old_class=LHP-HL-SWAP-A new_class=LHP-HL-SWAP-B student=SV-HL-0013 success=True
+[2026-06-02 17:11:09] DOI_LOP site=HL old_class=LHP-HL-SWAP-A new_class=LHP-HL-SWAP-B student=SV-HL-0013 success=True
+[2026-06-02 17:11:09] DOI_LOP site=HL old_class=LHP-HL-SWAP-B new_class=LHP-HL-SWAP-A student=SV-HL-0025 success=True
+[2026-06-02 17:13:59] DOI_LOP site=HL old_class=LHP-HL-SWAP-A new_class=LHP-HL-SWAP-B student=SV-HL-0013 success=True
+[2026-06-02 17:14:00] DOI_LOP site=HL old_class=LHP-HL-SWAP-B new_class=LHP-HL-SWAP-A student=SV-HL-0025 success=True
+[2026-06-02 17:15:57] DOI_LOP site=HL old_class=LHP-HL-SWAP-A new_class=LHP-HL-SWAP-B student=SV-HL-0013 success=True
+[2026-06-02 17:15:57] DOI_LOP site=HL old_class=LHP-HL-SWAP-B new_class=LHP-HL-SWAP-A student=SV-HL-0025 success=True
+[2026-06-02 18:59:51] SITE_DOWN site=NT action=KIEM_TRA_TRUNG_LICH student=SV-HL-0001 class=LHP-HL-011 error=connection to server at "localhost" (::1), port 5441 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5441 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+[2026-06-02 18:59:51] OFFLINE_OPERATION_CREATE id=1 site=NT action=DANG_KY status=PENDING
+[2026-06-02 19:02:19] DANG_KY site=HL class=LHP-HL-011 student=SV-HL-0001 success=True
+[2026-06-02 19:02:19] OFFLINE_OPERATION_RETRY id=1 action=DANG_KY success=True message=Dang ky hoc phan thanh cong

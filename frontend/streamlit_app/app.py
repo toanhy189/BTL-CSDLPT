@@ -1,4 +1,4 @@
-"""Streamlit frontend router for the distributed course registration system."""
+"""Bộ định tuyến giao diện Streamlit cho hệ thống đăng ký học phần phân tán."""
 
 import streamlit as st
 
@@ -8,6 +8,7 @@ from ui_pages.admin.admin_dashboard_page import render_admin_dashboard
 from ui_pages.admin.admin_distributed_query_page import render_admin_distributed_query
 from ui_pages.admin.admin_log_page import render_admin_log
 from ui_pages.admin.admin_management_page import render_admin_management
+from ui_pages.admin.admin_offline_operations_page import render_admin_offline_operations
 from ui_pages.login_page import render_login_page
 from ui_pages.student.student_cancel_page import render_student_cancel
 from ui_pages.student.student_home_page import render_student_home
@@ -31,6 +32,7 @@ ADMIN_MENU = [
     "Tổng quan",
     "Quản lý dữ liệu",
     "Truy vấn phân tán",
+    "Yêu cầu chờ xử lý",
     "Mô phỏng đồng thời",
     "Nhật ký thao tác",
 ]
@@ -59,6 +61,7 @@ MENU_ICONS = {
     "Tổng quan": "Tổng quan",
     "Quản lý dữ liệu": "Quản lý",
     "Truy vấn phân tán": "Phân tán",
+    "Yêu cầu chờ xử lý": "Chờ xử lý",
     "Mô phỏng đồng thời": "Đồng thời",
     "Nhật ký thao tác": "Nhật ký",
     "Lớp học phần phụ trách": "Lớp",
@@ -114,6 +117,8 @@ def render_admin(menu: str, token: str) -> None:
         render_admin_management(token)
     elif menu == "Truy vấn phân tán":
         render_admin_distributed_query(token)
+    elif menu == "Yêu cầu chờ xử lý":
+        render_admin_offline_operations(token)
     elif menu == "Mô phỏng đồng thời":
         render_admin_concurrency(token)
     elif menu == "Nhật ký thao tác":

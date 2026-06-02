@@ -1,4 +1,4 @@
-"""Course registration service with row locks and concurrent registration demo."""
+"""Service đăng ký học phần với khóa dòng và mô phỏng đăng ký đồng thời."""
 
 from datetime import datetime
 import threading
@@ -9,10 +9,11 @@ from backend.db.connections import get_connection
 from backend.core.registration_config import is_registration_open
 from backend.core.config import SITE_CODES
 from backend.services.log_service import write_log
+from backend.services.offline_operation_service import create_offline_operation
 
 
 def _subject_key(class_row):
-    """Return the logical subject offering key: subject + semester + school year."""
+    """Tạo khóa logic cho học phần theo môn học, học kỳ và năm học."""
     return f"{class_row[3]}:{class_row[1]}:{class_row[2]}"
 
 
@@ -204,7 +205,7 @@ def _find_schedule_conflict(student_id, class_site_code, current_cursor, class_i
                     return {"conflict": conflict, "site_code": site_code}
         except Exception as exc:
             write_log(f"SITE_DOWN site={site_code} action=KIEM_TRA_TRUNG_LICH student={student_id} class={class_id} error={exc}")
-            return {"error": f"Khong kiem tra duoc lich hoc tai site {site_code}: {exc}"}
+            return {"error": f"Khong kiem tra duoc lich hoc tai site {site_code}: {exc}", "site_code": site_code}
         finally:
             if conn:
                 conn.close()
@@ -245,13 +246,15 @@ def _activate_registration(cursor, student_id, student_headquarter, class_id, re
 
 
 def find_student_site(student_id, student_headquarter):
-    """Check whether a student exists at the declared student site."""
+    """Kiểm tra sinh viên có tồn tại tại site quản lý hồ sơ đã khai báo không."""
     conn = None
     try:
         conn = get_connection(student_headquarter)
         with conn.cursor() as cursor:
             cursor.execute("SELECT 1 FROM sinhvien WHERE id = %s;", (student_id,))
-            return cursor.fetchone() is not None, "Sinh vien hop le"
+            if cursor.fetchone() is not None:
+                return True, "Sinh vien hop le"
+            return False, "Khong tim thay sinh vien"
     except Exception as exc:
         write_log(f"SITE_DOWN site={student_headquarter} action=KIEM_TRA_SINH_VIEN student={student_id} error={exc}")
         return False, str(exc)
@@ -260,15 +263,96 @@ def find_student_site(student_id, student_headquarter):
             conn.close()
 
 
-def register_course(student_id, student_headquarter, class_site_code, class_id):
-    """Register a class or auto-change group for the same subject/semester/year."""
+def _offline_register_payload(student_id, student_headquarter, class_site_code, class_id):
+    return {
+        "student_id": student_id,
+        "student_headquarter": student_headquarter,
+        "class_site_code": class_site_code,
+        "class_id": class_id,
+    }
+
+
+def _store_offline_registration(site_code, student_id, student_headquarter, class_site_code, class_id, message):
+    operation_id = create_offline_operation(
+        site_code,
+        "DANG_KY",
+        _offline_register_payload(student_id, student_headquarter, class_site_code, class_id),
+        message,
+    )
+    if operation_id:
+        return (
+            False,
+            f"Site {site_code} dang mat ket noi, yeu cau dang ky da duoc ghi nhan "
+            f"de xu ly lai sau (offline_operation_id={operation_id})",
+        )
+    return False, message
+
+
+def _store_offline_cancel(site_code, student_id, class_site_code, class_id, message):
+    operation_id = create_offline_operation(
+        site_code,
+        "HUY_DANG_KY",
+        {
+            "student_id": student_id,
+            "class_site_code": class_site_code,
+            "class_id": class_id,
+        },
+        message,
+    )
+    if operation_id:
+        return (
+            False,
+            f"Site {site_code} dang mat ket noi, yeu cau huy dang ky da duoc ghi nhan "
+            f"de xu ly lai sau (offline_operation_id={operation_id})",
+        )
+    return False, message
+
+
+def _looks_like_site_connection_error(message):
+    text = str(message).lower()
+    markers = (
+        "could not connect",
+        "connection",
+        "timeout",
+        "refused",
+        "server",
+        "closed",
+        "terminating",
+    )
+    return any(marker in text for marker in markers)
+
+
+def register_course(student_id, student_headquarter, class_site_code, class_id, capture_offline=True):
+    """Đăng ký lớp học phần hoặc tự chuyển nhóm cùng môn, cùng kỳ, cùng năm."""
     if not is_registration_open():
         return False, "Dang ky hoc phan dang dong"
 
     student_ok, student_message = find_student_site(student_id, student_headquarter)
     if not student_ok:
+        if capture_offline and _looks_like_site_connection_error(student_message):
+            return _store_offline_registration(
+                student_headquarter,
+                student_id,
+                student_headquarter,
+                class_site_code,
+                class_id,
+                f"Khong tim thay sinh vien tai site {student_headquarter}: {student_message}",
+            )
         return False, f"Khong tim thay sinh vien tai site {student_headquarter}: {student_message}"
-    student_info = _get_student_info(student_id, student_headquarter)
+    try:
+        student_info = _get_student_info(student_id, student_headquarter)
+    except Exception as exc:
+        write_log(f"SITE_DOWN site={student_headquarter} action=LAY_THONG_TIN_SINH_VIEN student={student_id} error={exc}")
+        if capture_offline:
+            return _store_offline_registration(
+                student_headquarter,
+                student_id,
+                student_headquarter,
+                class_site_code,
+                class_id,
+                str(exc),
+            )
+        return False, str(exc)
     if not student_info:
         return False, "Khong lay duoc thong tin sinh vien"
     student_department, admission_year = student_info
@@ -301,7 +385,7 @@ def register_course(student_id, student_headquarter, class_site_code, class_id):
             if not _subject_in_training_program(cursor, student_department, target_class[3]):
                 conn.rollback()
                 return False, "Hoc phan khong nam trong chuong trinh dao tao cua sinh vien"
-
+# dùng để chống việc 2 request đăng ký cùng một sinh viên + cùng một môn/lớp liên quan chạy song song gây xung đột.
             cursor.execute(
                 "SELECT pg_advisory_xact_lock(hashtext(%s));",
                 (f"{student_id}:{_subject_key(target_class)}",),
@@ -346,6 +430,16 @@ def register_course(student_id, student_headquarter, class_site_code, class_id):
             if schedule_conflict:
                 conn.rollback()
                 if "error" in schedule_conflict:
+                    if capture_offline:
+                        failed_site = schedule_conflict.get("site_code", "UNKNOWN")
+                        return _store_offline_registration(
+                            failed_site,
+                            student_id,
+                            student_headquarter,
+                            class_site_code,
+                            class_id,
+                            schedule_conflict["error"],
+                        )
                     return False, schedule_conflict["error"]
                 conflict = schedule_conflict["conflict"]
                 return (
@@ -393,6 +487,15 @@ def register_course(student_id, student_headquarter, class_site_code, class_id):
             conn.rollback()
         if conn is None:
             write_log(f"SITE_DOWN site={class_site_code} action=DANG_KY student={student_id} class={class_id} error={exc}")
+            if capture_offline:
+                return _store_offline_registration(
+                    class_site_code,
+                    student_id,
+                    student_headquarter,
+                    class_site_code,
+                    class_id,
+                    str(exc),
+                )
             return False, f"Khong the ket noi site {class_site_code}, giao dich dang ky bi huy de dam bao nhat quan du lieu"
         write_log(f"DANG_KY site={class_site_code} class={class_id} student={student_id} success=False error={exc}")
         return False, str(exc)
@@ -401,8 +504,8 @@ def register_course(student_id, student_headquarter, class_site_code, class_id):
             conn.close()
 
 
-def cancel_registration(student_id, class_site_code, class_id):
-    """Cancel a registration using the same class-first lock order."""
+def cancel_registration(student_id, class_site_code, class_id, capture_offline=True):
+    """Hủy đăng ký học phần, khóa lớp trước để giữ thứ tự khóa nhất quán."""
     conn = None
     try:
         conn = get_connection(class_site_code)
@@ -457,6 +560,8 @@ def cancel_registration(student_id, class_site_code, class_id):
             conn.rollback()
         if conn is None:
             write_log(f"SITE_DOWN site={class_site_code} action=HUY_DANG_KY student={student_id} class={class_id} error={exc}")
+            if capture_offline:
+                return _store_offline_cancel(class_site_code, student_id, class_site_code, class_id, str(exc))
             return False, f"Khong the ket noi site {class_site_code}, giao dich huy dang ky bi huy de dam bao nhat quan du lieu"
         return False, str(exc)
     finally:
@@ -465,7 +570,7 @@ def cancel_registration(student_id, class_site_code, class_id):
 
 
 def reset_test_class(class_site_code="HL", class_id="LHP-HL-TEST", max_student=1):
-    """Reset demo class so the concurrent registration demo can be repeated."""
+    """Reset lớp demo để có thể chạy lại mô phỏng đăng ký đồng thời."""
     if max_student < 1:
         return False, "max_student phai lon hon hoac bang 1"
 
@@ -503,7 +608,7 @@ def reset_test_class(class_site_code="HL", class_id="LHP-HL-TEST", max_student=1
 
 
 def simulate_concurrent_registration(class_site_code, class_id, students):
-    """Run multiple registration attempts in parallel threads."""
+    """Chạy nhiều yêu cầu đăng ký song song bằng các luồng khác nhau."""
     results = []
     lock = threading.Lock()
 

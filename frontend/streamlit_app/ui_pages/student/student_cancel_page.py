@@ -1,4 +1,4 @@
-"""Student cancel registration page."""
+"""Trang sinh viên hủy đăng ký học phần."""
 
 import streamlit as st
 

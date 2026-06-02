@@ -1,4 +1,4 @@
-"""Admin data management page."""
+"""Trang quản trị dữ liệu hệ thống."""
 
 import streamlit as st
 

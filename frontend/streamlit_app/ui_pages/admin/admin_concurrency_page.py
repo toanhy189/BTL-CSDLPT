@@ -1,4 +1,4 @@
-"""Admin concurrency simulation page."""
+"""Trang quản trị mô phỏng đăng ký đồng thời."""
 
 import streamlit as st
 

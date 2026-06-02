@@ -8,6 +8,12 @@ from backend.db.distributed_queries import (
     thong_ke_sinh_vien_theo_co_so,
     thong_ke_so_lop_theo_co_so,
 )
+from backend.services.offline_operation_service import (
+    list_offline_operations as _list_offline_operations,
+    retry_all_pending_operations as _retry_all_pending_operations,
+    retry_offline_operation as _retry_offline_operation,
+    update_offline_operation_status,
+)
 
 
 # Xử lý bước nghiệp vụ tổng quan trong module này.
@@ -30,6 +36,22 @@ def sites_status():
         ok, message = check_site_connection(site_code)
         rows.append({"site_code": site_code, "status": "OK" if ok else "ERROR", "message": message})
     return rows
+
+
+def list_offline_operations(status=None):
+    return _list_offline_operations(status)
+
+
+def retry_offline_operation(operation_id):
+    return _retry_offline_operation(operation_id)
+
+
+def retry_all_offline_operations():
+    return _retry_all_pending_operations()
+
+
+def cancel_offline_operation(operation_id):
+    return update_offline_operation_status(operation_id, "CANCELLED", "Admin cancelled offline operation")
 
 
 # Lấy dữ liệu sinh viên từ nguồn phù hợp để trả về cho tầng gọi phía trên.

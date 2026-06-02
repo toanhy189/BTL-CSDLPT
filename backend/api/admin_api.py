@@ -1,4 +1,4 @@
-"""Router FastAPI dành cho quản trị viên, nhận request quản lý dữ liệu và chuyển xuống service phù hợp."""
+"""Bộ định tuyến FastAPI dành cho quản trị viên, nhận yêu cầu quản lý dữ liệu và chuyển xuống service phù hợp."""
 
 from fastapi import APIRouter, Depends, Query
 
@@ -35,15 +35,37 @@ def sites_status():
     return management_service.sites_status()
 
 
+@router.get("/offline-operations")
+def offline_operations(status: str | None = Query(None)):
+    return management_service.list_offline_operations(status)
+
+
+@router.post("/offline-operations/retry-all")
+def retry_all_offline_operations():
+    return management_service.retry_all_offline_operations()
+
+
+@router.post("/offline-operations/{operation_id}/retry")
+def retry_offline_operation(operation_id: int):
+    success, message = management_service.retry_offline_operation(operation_id)
+    return {"success": success, "message": message}
+
+
+@router.post("/offline-operations/{operation_id}/cancel")
+def cancel_offline_operation(operation_id: int):
+    success, message = management_service.cancel_offline_operation(operation_id)
+    return {"success": success, "message": message}
+
+
 @router.get("/registration-status")
 def registration_status():
-    """Tra ve trang thai mo/dong dang ky hoc phan."""
+    """Trả về trạng thái mở/đóng đăng ký học phần."""
     return get_registration_config()
 
 
 @router.post("/registration-status")
 def update_registration_status(payload: RegistrationStatusUpdate):
-    """Admin cap nhat trang thai mo/dong dang ky hoc phan."""
+    """Quản trị viên cập nhật trạng thái mở/đóng đăng ký học phần."""
     return set_registration_open(payload.registration_open)
 
 

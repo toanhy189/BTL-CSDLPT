@@ -239,7 +239,7 @@ def get_courses(site_code):
     return _read_sql(site_code, "SELECT * FROM hocphan ORDER BY id;")
 
 
-# Thêm mới dữ liệu học phần to all các site sau khi nhận thông tin từ form hoặc API.
+# Thêm mới dữ liệu học phần lên tất cả site sau khi nhận thông tin từ form hoặc API.
 def add_course_to_all_sites(data):
     return _write_all_sites(
         "INSERT INTO hocphan (id, name_subject, number_of_credit, id_department) VALUES (%s, %s, %s, %s);",
@@ -247,7 +247,7 @@ def add_course_to_all_sites(data):
     )
 
 
-# Cập nhật dữ liệu học phần all các site theo khóa bản ghi được người dùng chọn.
+# Cập nhật dữ liệu học phần trên tất cả site theo khóa bản ghi được người dùng chọn.
 def update_course_all_sites(course_id, data):
     return _write_all_sites(
         """
@@ -259,7 +259,7 @@ def update_course_all_sites(course_id, data):
     )
 
 
-# Xóa dữ liệu học phần all các site theo khóa bản ghi được người dùng chọn.
+# Xóa dữ liệu học phần trên tất cả site theo khóa bản ghi được người dùng chọn.
 def delete_course_all_sites(course_id):
     return _write_all_sites("DELETE FROM hocphan WHERE id = %s;", (course_id,))
 
@@ -469,7 +469,7 @@ def delete_schedule(site_code, schedule_id):
     return _write_sql(site_code, "DELETE FROM lichhoc WHERE id = %s;", (schedule_id,))
 
 
-# Lấy dữ liệu registration by sinh viên từ nguồn phù hợp để trả về cho tầng gọi phía trên.
+# Lấy dữ liệu đăng ký theo sinh viên từ nguồn phù hợp để trả về cho tầng gọi phía trên.
 def get_registration_by_student(student_id):
     frames = []
     query = """
@@ -498,7 +498,7 @@ def get_registration_by_student(student_id):
     return pd.concat(frames, ignore_index=True)
 
 
-# Lấy dữ liệu registration by class từ nguồn phù hợp để trả về cho tầng gọi phía trên.
+# Lấy dữ liệu đăng ký theo lớp từ nguồn phù hợp để trả về cho tầng gọi phía trên.
 def get_registration_by_class(site_code, class_id):
     return _read_sql(
         site_code,

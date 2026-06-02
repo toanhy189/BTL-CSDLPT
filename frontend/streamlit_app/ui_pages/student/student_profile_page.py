@@ -1,4 +1,4 @@
-"""Student profile page."""
+"""Trang hồ sơ cá nhân của sinh viên."""
 
 from api_client import api_get
 import streamlit as st

@@ -1,4 +1,4 @@
-"""Router FastAPI cho nhóm nghiệp vụ concurrency api, nhận request và chuyển xuống service phù hợp."""
+"""Bộ định tuyến FastAPI cho nhóm nghiệp vụ mô phỏng đồng thời, nhận yêu cầu và chuyển xuống service phù hợp."""
 
 from fastapi import APIRouter, Depends, Query
 
@@ -33,7 +33,7 @@ def simulate(payload: ConcurrentRegistrationRequest):
     }
 
 
-# Reset lop test de demo dong thoi lap lai duoc trong Swagger hoac Streamlit.
+# Reset lớp kiểm thử để demo đồng thời có thể chạy lại trong Swagger hoặc Streamlit.
 @router.post("/reset-test-class")
 def reset_test(
     class_site_code: str = Query("HL"),

@@ -1,4 +1,4 @@
-"""Login page."""
+"""Trang đăng nhập hệ thống."""
 
 import streamlit as st
 

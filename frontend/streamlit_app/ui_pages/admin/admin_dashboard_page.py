@@ -1,4 +1,4 @@
-"""Admin dashboard page."""
+"""Trang tổng quan dành cho quản trị viên."""
 
 import pandas as pd
 import streamlit as st

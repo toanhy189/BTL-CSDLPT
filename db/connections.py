@@ -57,7 +57,7 @@ def get_connection(site_code):
     return psycopg2.connect(**config)
 
 
-# Lấy dữ liệu all kết nối từ nguồn phù hợp để trả về cho tầng gọi phía trên.
+# Lấy thông tin tất cả kết nối từ nguồn phù hợp để trả về cho tầng gọi phía trên.
 def get_all_connections():
     return {site_code: get_connection(site_code) for site_code in SITE_CODES}
 

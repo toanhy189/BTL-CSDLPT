@@ -5,6 +5,7 @@
 -- 1. XÓA BẢNG NẾU ĐÃ TỒN TẠI
 -- =========================================================
 DROP TABLE IF EXISTS DangKy CASCADE;
+DROP TABLE IF EXISTS OfflineOperationLog CASCADE;
 DROP TABLE IF EXISTS LichHoc CASCADE;
 DROP TABLE IF EXISTS LopHocPhan CASCADE;
 DROP TABLE IF EXISTS SinhVien CASCADE;
@@ -185,4 +186,22 @@ CREATE TABLE DangKy (
         FOREIGN KEY (ID_registration_period) REFERENCES DotDangKy(ID),
     CONSTRAINT CK_DangKy_Status
         CHECK (status IN ('DA_DANG_KY', 'DA_HUY'))
+);
+
+-- 12. BẢNG GHI NHẬN THAO TÁC BỊ LỖI KHI SITE TẠM THỜI MẤT KẾT NỐI
+CREATE TABLE OfflineOperationLog (
+    ID serial NOT NULL,
+    site_code varchar(10) NOT NULL,
+    action varchar(50) NOT NULL,
+    payload jsonb NOT NULL,
+    error_message text,
+    status varchar(20) NOT NULL DEFAULT 'PENDING',
+    created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    retried_at timestamp,
+    retry_count int NOT NULL DEFAULT 0,
+    CONSTRAINT PK_OfflineOperationLog PRIMARY KEY (ID),
+    CONSTRAINT CK_OfflineOperationLog_Action
+        CHECK (action IN ('DANG_KY', 'HUY_DANG_KY')),
+    CONSTRAINT CK_OfflineOperationLog_Status
+        CHECK (status IN ('PENDING', 'RETRYING', 'DONE', 'FAILED', 'CANCELLED'))
 );

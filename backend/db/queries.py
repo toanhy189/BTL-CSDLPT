@@ -213,7 +213,7 @@ def get_courses(site_code="HL"):
     return read_sql(site_code, "SELECT * FROM hocphan ORDER BY id;")
 
 
-# Thêm mới dữ liệu học phần to all các site sau khi nhận thông tin từ form hoặc API.
+# Thêm mới dữ liệu học phần lên tất cả site sau khi nhận thông tin từ form hoặc API.
 def add_course_to_all_sites(data):
     return write_all_sites(
         "INSERT INTO hocphan (id, name_subject, number_of_credit, id_department) VALUES (%s, %s, %s, %s);",
@@ -465,7 +465,7 @@ def get_class_sections(site_code):
 
 
 def get_open_class_sections_for_student(site_code, student_id, student_headquarter):
-    """Lay lop hoc phan duoc phep dang ky theo dot dang ky va CTDT cua sinh vien."""
+    """Lấy lớp học phần được phép đăng ký theo đợt đăng ký và CTĐT của sinh viên."""
     student_df = read_sql(
         student_headquarter,
         """
@@ -566,7 +566,7 @@ def get_open_class_sections_for_student(site_code, student_id, student_headquart
 
 
 def get_active_registration_period_for_student(site_code, student_department, admission_year, semester, school_year):
-    """Tim dot dang ky hop le tren site dang xu ly dang ky."""
+    """Tìm đợt đăng ký hợp lệ trên site đang xử lý đăng ký."""
     admission_year = _to_python_int(admission_year)
     semester = _to_python_int(semester)
     school_year = _to_python_int(school_year)
@@ -729,7 +729,7 @@ def delete_schedule(site_code, schedule_id):
     return write_sql(site_code, "DELETE FROM lichhoc WHERE id = %s;", (schedule_id,))
 
 
-# Lấy dữ liệu registration by sinh viên từ nguồn phù hợp để trả về cho tầng gọi phía trên.
+# Lấy dữ liệu đăng ký theo sinh viên từ nguồn phù hợp để trả về cho tầng gọi phía trên.
 def get_registration_by_student(student_id):
     frames = []
     query = """
@@ -764,7 +764,7 @@ def get_registration_by_student(student_id):
     return pd.concat(frames, ignore_index=True)
 
 
-# Lấy dữ liệu registration by class từ nguồn phù hợp để trả về cho tầng gọi phía trên.
+# Lấy dữ liệu đăng ký theo lớp từ nguồn phù hợp để trả về cho tầng gọi phía trên.
 def get_registration_by_class(site_code, class_id):
     return read_sql(
         site_code,

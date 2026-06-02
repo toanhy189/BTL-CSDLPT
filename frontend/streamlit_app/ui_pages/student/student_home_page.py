@@ -1,4 +1,4 @@
-"""Student home page."""
+"""Trang chủ sinh viên."""
 
 import streamlit as st
 

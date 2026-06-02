@@ -1,4 +1,4 @@
-"""Router FastAPI cho nhóm nghiệp vụ registration api, nhận request và chuyển xuống service phù hợp."""
+"""Bộ định tuyến FastAPI cho nhóm nghiệp vụ đăng ký học phần, nhận yêu cầu và chuyển xuống service phù hợp."""
 
 from fastapi import APIRouter, Depends, Query
 
@@ -47,7 +47,7 @@ def registrations(current_user=Depends(require_role(["SINH_VIEN", "ADMIN"])), st
     return df_to_records(queries.get_registration_by_student(lookup_id))
 
 
-# Xử lý bước nghiệp vụ open classes trong module này.
+# Xử lý bước nghiệp vụ danh sách lớp đang mở trong module này.
 @router.get("/open-classes")
 def open_classes(site_code: str = Query("HL"), current_user=Depends(require_role(["SINH_VIEN", "ADMIN"]))):
     if current_user["role"] == "SINH_VIEN":

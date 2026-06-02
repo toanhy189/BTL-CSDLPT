@@ -1,4 +1,4 @@
-"""File-backed registration open/close configuration."""
+"""Cấu hình mở/đóng đăng ký học phần được lưu bằng file JSON cục bộ."""
 
 from pathlib import Path
 import json
@@ -9,7 +9,7 @@ DEFAULT_CONFIG = {"registration_open": True}
 
 
 def get_registration_config():
-    """Read registration config from a local JSON file."""
+    """Đọc cấu hình đăng ký từ file JSON cục bộ."""
     if not CONFIG_PATH.exists():
         return dict(DEFAULT_CONFIG)
     try:
@@ -22,12 +22,12 @@ def get_registration_config():
 
 
 def set_registration_open(is_open):
-    """Persist registration open/close status."""
+    """Lưu trạng thái mở/đóng đăng ký học phần."""
     data = {"registration_open": bool(is_open)}
     CONFIG_PATH.write_text(json.dumps(data, indent=2), encoding="utf-8")
     return data
 
 
 def is_registration_open():
-    """Return whether students are currently allowed to register."""
+    """Trả về việc sinh viên hiện có được phép đăng ký hay không."""
     return get_registration_config()["registration_open"]

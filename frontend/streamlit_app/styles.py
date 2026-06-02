@@ -1,4 +1,4 @@
-"""Shared Streamlit UI helpers for the course registration portal."""
+"""Các hàm hỗ trợ giao diện Streamlit dùng chung cho cổng đăng ký học phần."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ ROLE_PORTALS = {
 
 SITE_LABELS = {
     "HL": "Cơ sở Hòa Lạc",
-    "NT": "Cơ sở Ngọc Trúc",
+    "NT": "Cơ sở Ngọc Trục",
     "HD": "Cơ sở Hà Đông",
     "CG": "Cơ sở Cầu Giấy",
     "HCM": "Cơ sở TP.HCM",

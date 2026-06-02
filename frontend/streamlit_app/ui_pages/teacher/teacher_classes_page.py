@@ -1,4 +1,4 @@
-"""Teacher class-section page."""
+"""Trang lớp học phần phụ trách của giảng viên."""
 
 import streamlit as st
 

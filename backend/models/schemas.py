@@ -1,4 +1,4 @@
-"""Các schema Pydantic mô tả dữ liệu request từ frontend gửi lên backend."""
+"""Các schema Pydantic mô tả dữ liệu yêu cầu từ frontend gửi lên backend."""
 
 from pydantic import BaseModel
 

@@ -1,4 +1,4 @@
-"""Trang Streamlit cho nghiệp vụ trang chủ giảng viên, hiển thị dữ liệu và gửi thao tác của người dùng."""
+"""Trang chủ giảng viên, hiển thị thống kê nhanh và lối tắt thao tác."""
 
 import streamlit as st
 
@@ -6,9 +6,9 @@ from api_client import api_get
 from styles import metric_card, page_title, section_title
 
 
-# Vẽ màn hình/khối giao diện giảng viên home và gọi API hoặc service khi người dùng thao tác.
+# Vẽ trang chủ giảng viên và lấy số liệu tổng quan từ API.
 def render_teacher_home(token):
-    """Vẽ màn hình/khối giao diện giảng viên home và gọi API hoặc service khi người dùng thao tác."""
+    """Vẽ trang chủ giảng viên và lấy số liệu tổng quan từ API."""
     page_title("Trang chủ giảng viên", "Tổng quan lớp học phần phụ trách.")
     data = api_get("/teacher/statistics", token=token)
     if data.get("_error"):

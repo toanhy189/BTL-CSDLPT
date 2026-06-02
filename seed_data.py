@@ -15,7 +15,7 @@ if hasattr(sys.stdout, "reconfigure"):
 
 fake = Faker("vi_VN")
 
-# 1. Du lieu nhan ban tren ca 5 site.
+# 1. Dữ liệu nhân bản trên cả 5 site.
 CO_SO_DATA = [
     ("HL", "Co so Hoa Lac", "Khu CNC Hoa Lac, Thach That, Ha Noi"),
     ("NT", "Co so Ngoc Truc", "Ngoc Truc, Nam Tu Liem, Ha Noi"),
@@ -130,7 +130,7 @@ PERIOD_TIME = {
 }
 SEMESTER_START_DATE = date(2026, 4, 20)
 
-# 2. Du lieu phan manh theo site.
+# 2. Dữ liệu phân mảnh theo site.
 PHONG_HOC_DATA = {site: [] for site in SITE_CODES}
 GIANG_VIEN_DATA = {site: [] for site in SITE_CODES}
 SINH_VIEN_DATA = {site: [] for site in SITE_CODES}
@@ -197,7 +197,7 @@ for site in SITE_CODES:
             )
         )
 
-        # Mot lop hoc phan co the co nhieu lich hoc, moi lich hoc gan mot phong.
+        # Một lớp học phần có thể có nhiều lịch học, mỗi lịch học gắn một phòng.
         session_count = random.choice([1, 2])
         days = random.sample(range(2, 8), session_count)
         rooms = random.sample(PHONG_HOC_DATA[site], session_count)
@@ -223,7 +223,7 @@ for site in SITE_CODES:
                     )
                 )
 
-# Lop dac biet de test dang ky dong thoi.
+# Lớp đặc biệt để kiểm thử đăng ký đồng thời.
 LOP_HOC_PHAN_DATA["HL"].append(
     ("LHP-HL-TEST", 2, 2026, 0, 1, "INT102", GIANG_VIEN_DATA["HL"][0][0], "HL")
 )

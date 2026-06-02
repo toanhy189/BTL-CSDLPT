@@ -8,7 +8,7 @@ from styles import page_title, section_title
 
 # Vẽ màn hình/khối giao diện admin nhật ký và gọi API hoặc service khi người dùng thao tác.
 def render_admin_log(token):
-    """Vẽ màn hình/khối giao diện admin nhật ký và gọi API hoặc service khi người dùng thao tác."""
+    """Vẽ màn hình nhật ký quản trị và gọi API hoặc service khi người dùng thao tác."""
     page_title("Nhật ký thao tác", "Theo dõi log xử lý đăng ký và mô phỏng đồng thời.")
     section_title("Log hệ thống")
     data = api_get("/concurrency/logs", token=token)

@@ -1,6 +1,6 @@
--- Trigger dong bo si so lop hoc phan tu bang DangKy.
--- Backend van khoa LopHocPhan bang SELECT ... FOR UPDATE de kiem soat dong thoi.
--- Trigger chi chiu trach nhiem cap nhat number_of_student va chan lop day.
+-- Trigger đồng bộ sĩ số lớp học phần từ bảng DangKy.
+-- Backend vẫn khóa LopHocPhan bằng SELECT ... FOR UPDATE để kiểm soát đồng thời.
+-- Trigger chỉ chịu trách nhiệm cập nhật number_of_student và chặn lớp đầy.
 
 CREATE OR REPLACE FUNCTION fn_dangky_sync_si_so()
 RETURNS trigger AS $$
